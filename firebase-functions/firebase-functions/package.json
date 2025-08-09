@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "rio-firebase-functions": "file:.."
+  }
+}

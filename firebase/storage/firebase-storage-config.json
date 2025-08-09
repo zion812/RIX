@@ -1,0 +1,291 @@
+{
+  "storage": {
+    "bucket": "rio-storage-bucket",
+    "region": "asia-south1",
+    "multiRegion": false,
+    "cors": [
+      {
+        "origin": ["*"],
+        "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
+        "maxAgeSeconds": 3600,
+        "responseHeader": ["Content-Type", "Authorization", "Content-Length", "User-Agent", "x-goog-resumable"]
+      }
+    ],
+    "lifecycle": {
+      "rule": [
+        {
+          "action": {
+            "type": "SetStorageClass",
+            "storageClass": "NEARLINE"
+          },
+          "condition": {
+            "age": 30,
+            "matchesStorageClass": ["STANDARD"],
+            "matchesPrefix": ["users/"]
+          }
+        },
+        {
+          "action": {
+            "type": "SetStorageClass", 
+            "storageClass": "COLDLINE"
+          },
+          "condition": {
+            "age": 90,
+            "matchesStorageClass": ["STANDARD", "NEARLINE"],
+            "matchesPrefix": ["users/"]
+          }
+        },
+        {
+          "action": {
+            "type": "Delete"
+          },
+          "condition": {
+            "age": 1,
+            "matchesPrefix": ["temp/"]
+          }
+        },
+        {
+          "action": {
+            "type": "Delete"
+          },
+          "condition": {
+            "age": 365,
+            "matchesPrefix": ["users/"],
+            "matchesSuffix": ["/general/"]
+          }
+        }
+      ]
+    },
+    "retentionPolicy": {
+      "retentionPeriod": "86400s"
+    },
+    "versioning": {
+      "enabled": true
+    },
+    "logging": {
+      "logBucket": "rio-storage-logs",
+      "logObjectPrefix": "storage-access-logs/"
+    },
+    "website": {
+      "mainPageSuffix": "index.html",
+      "notFoundPage": "404.html"
+    },
+    "defaultObjectAcl": [
+      {
+        "entity": "allUsers",
+        "role": "READER"
+      }
+    ]
+  },
+  "cdn": {
+    "enabled": true,
+    "cacheMode": "CACHE_ALL_STATIC",
+    "defaultTtl": "3600s",
+    "maxTtl": "86400s",
+    "clientTtl": "3600s",
+    "negativeCaching": true,
+    "negativeCachingPolicy": [
+      {
+        "code": 404,
+        "ttl": "120s"
+      },
+      {
+        "code": 410,
+        "ttl": "120s"
+      }
+    ],
+    "compressionMode": "AUTOMATIC",
+    "enableCdn": true,
+    "cacheKeyPolicy": {
+      "includeHost": true,
+      "includeProtocol": true,
+      "includeQueryString": false,
+      "queryStringWhitelist": ["quality", "format"]
+    }
+  },
+  "optimization": {
+    "imageOptimization": {
+      "enabled": true,
+      "formats": ["webp", "jpeg"],
+      "qualities": [30, 50, 70, 85, 90],
+      "sizes": [150, 240, 480, 720, 1080],
+      "progressive": true,
+      "autoWebP": true
+    },
+    "videoOptimization": {
+      "enabled": true,
+      "formats": ["mp4"],
+      "qualities": ["240p", "480p", "720p"],
+      "bitrates": ["500k", "1000k", "2000k"],
+      "thumbnails": true,
+      "adaptiveStreaming": false
+    },
+    "compression": {
+      "gzip": true,
+      "brotli": true,
+      "minFileSize": 1024
+    }
+  },
+  "security": {
+    "publicReadAccess": false,
+    "uniformBucketLevelAccess": true,
+    "preventPublicAccess": true,
+    "requiredTwoFactorAuthentication": false,
+    "allowedOrigins": [
+      "https://rio-app.com",
+      "https://admin.rio-app.com",
+      "android-app://com.rio.rostry"
+    ],
+    "blockedCountries": [],
+    "rateLimiting": {
+      "enabled": true,
+      "requestsPerMinute": 100,
+      "requestsPerHour": 1000,
+      "requestsPerDay": 10000
+    },
+    "virusScanning": {
+      "enabled": true,
+      "quarantineInfected": true,
+      "notifyOnDetection": true
+    }
+  },
+  "monitoring": {
+    "metrics": {
+      "enabled": true,
+      "exportInterval": "60s",
+      "retentionDays": 30
+    },
+    "logging": {
+      "accessLogs": true,
+      "errorLogs": true,
+      "auditLogs": true,
+      "logLevel": "INFO"
+    },
+    "alerting": {
+      "enabled": true,
+      "thresholds": {
+        "storageUsageGB": 1000,
+        "bandwidthUsageGB": 100,
+        "errorRate": 0.05,
+        "latencyMs": 5000
+      },
+      "notificationChannels": [
+        "email:admin@rio-app.com",
+        "slack:#alerts"
+      ]
+    }
+  },
+  "costOptimization": {
+    "autoTiering": {
+      "enabled": true,
+      "standardToNearlineDays": 30,
+      "nearlineToColdlineDays": 90,
+      "excludePrefixes": ["users/*/fowls/*/transfers/"]
+    },
+    "duplicateDetection": {
+      "enabled": true,
+      "hashAlgorithm": "SHA256",
+      "deduplicationAction": "REFERENCE"
+    },
+    "compressionAnalysis": {
+      "enabled": true,
+      "reportingInterval": "weekly",
+      "compressionThreshold": 0.1
+    },
+    "unusedFileCleanup": {
+      "enabled": true,
+      "retentionDays": 90,
+      "excludePatterns": ["*/transfers/*", "*/legal/*"]
+    }
+  },
+  "regionalSettings": {
+    "primaryRegion": "asia-south1",
+    "secondaryRegion": "asia-southeast1",
+    "replication": {
+      "enabled": true,
+      "replicationClass": "REGIONAL",
+      "crossRegionReplication": false
+    },
+    "dataResidency": {
+      "enforceIndia": true,
+      "allowedRegions": ["asia-south1", "asia-southeast1"]
+    }
+  },
+  "performance": {
+    "parallelUploads": {
+      "enabled": true,
+      "maxConcurrentUploads": 3,
+      "chunkSize": "256KB"
+    },
+    "resumableUploads": {
+      "enabled": true,
+      "chunkSize": "256KB",
+      "maxRetries": 3
+    },
+    "prefetching": {
+      "enabled": true,
+      "prefetchThumbnails": true,
+      "prefetchNextImages": 2
+    },
+    "caching": {
+      "browserCache": "public, max-age=31536000",
+      "cdnCache": "public, max-age=86400",
+      "applicationCache": "max-age=3600"
+    }
+  },
+  "quotas": {
+    "userTiers": {
+      "GENERAL": {
+        "maxStorageBytes": 524288000,
+        "maxFileSize": 10485760,
+        "maxFilesPerDay": 50,
+        "maxBandwidthPerDay": 104857600
+      },
+      "FARMER": {
+        "maxStorageBytes": 2147483648,
+        "maxFileSize": 52428800,
+        "maxFilesPerDay": 200,
+        "maxBandwidthPerDay": 524288000
+      },
+      "ENTHUSIAST": {
+        "maxStorageBytes": 5368709120,
+        "maxFileSize": 104857600,
+        "maxFilesPerDay": 500,
+        "maxBandwidthPerDay": 1073741824
+      }
+    },
+    "globalLimits": {
+      "maxConcurrentUploads": 10,
+      "maxConcurrentDownloads": 20,
+      "maxRequestsPerSecond": 100
+    }
+  },
+  "backup": {
+    "enabled": true,
+    "schedule": "daily",
+    "retentionDays": 30,
+    "crossRegionBackup": true,
+    "backupBucket": "rio-storage-backup",
+    "incrementalBackup": true,
+    "encryptionKey": "projects/rio-platform/locations/global/keyRings/storage-backup/cryptoKeys/backup-key"
+  },
+  "compliance": {
+    "dataProtection": {
+      "gdprCompliant": true,
+      "dataRetentionDays": 2555,
+      "rightToErasure": true,
+      "dataPortability": true
+    },
+    "auditTrail": {
+      "enabled": true,
+      "retentionDays": 2555,
+      "includeDataAccess": true,
+      "includeAdminActions": true
+    },
+    "encryption": {
+      "atRest": "AES256",
+      "inTransit": "TLS1.2",
+      "keyManagement": "GOOGLE_MANAGED"
+    }
+  }
+}

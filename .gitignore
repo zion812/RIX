@@ -1,0 +1,36 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Node.js and Firebase
+node_modules/
+**/node_modules/
+firebase-functions/node_modules/
+firebase/node_modules/
+
+# General
+*.log
+*.tmp
+*.swp
+*.swo
+.env
+*.lock
+.idea/
+*.apk
+*.keystore
+*.jks
+*.class
+*.jar
+*.war

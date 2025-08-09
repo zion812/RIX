@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIO Demo Payment Gateway</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .payment-form {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #FF6B35;
+        }
+
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .payment-method {
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .payment-method:hover {
+            border-color: #FF6B35;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .payment-method.selected {
+            border-color: #FF6B35;
+            background: #fff5f2;
+        }
+
+        .payment-method .icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .payment-method .name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .payment-method .description {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .processing {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #FF6B35;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .result.success {
+            color: #28a745;
+        }
+
+        .result.error {
+            color: #dc3545;
+        }
+
+        .result .icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .result h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .demo-credentials {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .demo-credentials h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .demo-credentials p {
+            margin: 5px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #FF6B35;
+        }
+
+        .stat-card .label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .payment-methods {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 RIO Demo Payment Gateway</h1>
+            <p>Fully Functional Payment Simulation for Testing & Development</p>
+        </div>
+
+        <div class="content">
+            <!-- Payment Form -->
+            <div id="paymentForm" class="payment-form">
+                <h3>💰 Create Demo Payment</h3>
+                
+                <div class="form-group">
+                    <label for="amount">Amount (₹)</label>
+                    <input type="number" id="amount" min="1" max="5000" value="100" placeholder="Enter amount">
+                </div>
+
+                <div class="form-group">
+                    <label for="packageId">Package ID</label>
+                    <select id="packageId">
+                        <option value="basic_10">Basic Package - 10 Coins (₹50)</option>
+                        <option value="standard_25">Standard Package - 25 Coins (₹125)</option>
+                        <option value="premium_50">Premium Package - 50 Coins (₹250)</option>
+                        <option value="farmer_basic_50">Farmer Basic - 50 Coins (₹250)</option>
+                        <option value="farmer_pro_100">Farmer Pro - 100 Coins (₹500)</option>
+                        <option value="enthusiast_standard_100">Enthusiast Standard - 100 Coins (₹500)</option>
+                    </select>
+                </div>
+
+                <h4>Select Payment Method</h4>
+                <div class="payment-methods">
+                    <div class="payment-method" data-method="UPI">
+                        <div class="icon">📱</div>
+                        <div class="name">UPI</div>
+                        <div class="description">95% Success Rate</div>
+                    </div>
+                    <div class="payment-method" data-method="GOOGLE_PAY">
+                        <div class="icon">🎯</div>
+                        <div class="name">Google Pay</div>
+                        <div class="description">98% Success Rate</div>
+                    </div>
+                    <div class="payment-method" data-method="CARD">
+                        <div class="icon">💳</div>
+                        <div class="name">Card</div>
+                        <div class="description">92% Success Rate</div>
+                    </div>
+                    <div class="payment-method" data-method="NET_BANKING">
+                        <div class="icon">🏦</div>
+                        <div class="name">Net Banking</div>
+                        <div class="description">94% Success Rate</div>
+                    </div>
+                    <div class="payment-method" data-method="WALLET">
+                        <div class="icon">👛</div>
+                        <div class="name">Wallet</div>
+                        <div class="description">96% Success Rate</div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="processPayment()">
+                    Pay ₹<span id="displayAmount">100</span>
+                </button>
+            </div>
+
+            <!-- Processing Screen -->
+            <div id="processing" class="processing">
+                <div class="spinner"></div>
+                <h3 id="processingMessage">Processing payment...</h3>
+                <p>Please do not close this window</p>
+            </div>
+
+            <!-- Result Screen -->
+            <div id="result" class="result">
+                <div class="icon" id="resultIcon">✅</div>
+                <h3 id="resultTitle">Payment Successful!</h3>
+                <p id="resultMessage">Your payment has been processed successfully.</p>
+                <p id="paymentId"></p>
+                <button class="btn" onclick="resetForm()" style="margin-top: 20px; width: auto; padding: 10px 20px;">
+                    Make Another Payment
+                </button>
+            </div>
+
+            <!-- Demo Credentials -->
+            <div class="demo-credentials">
+                <h4>🔑 Demo Test Credentials</h4>
+                <p><strong>UPI ID:</strong> test@demo, demo@upi, user@test</p>
+                <p><strong>UPI PIN:</strong> 1234, 0000, 9999</p>
+                <p><strong>Card Number:</strong> 4111 1111 1111 1111 (Visa)</p>
+                <p><strong>Expiry:</strong> 12/25 | <strong>CVV:</strong> 123</p>
+                <p><strong>Cardholder Name:</strong> Demo User</p>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="value" id="totalTransactions">1,250</div>
+                    <div class="label">Total Transactions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="successRate">94.96%</div>
+                    <div class="label">Success Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="avgProcessingTime">3.2s</div>
+                    <div class="label">Avg Processing Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="totalAmount">₹1,56,750</div>
+                    <div class="label">Total Amount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedMethod = 'UPI';
+        let currentOrderId = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select first payment method by default
+            document.querySelector('.payment-method[data-method="UPI"]').classList.add('selected');
+            
+            // Update amount display
+            document.getElementById('amount').addEventListener('input', function() {
+                document.getElementById('displayAmount').textContent = this.value;
+            });
+
+            // Package selection updates amount
+            document.getElementById('packageId').addEventListener('change', function() {
+                const packageAmounts = {
+                    'basic_10': 50,
+                    'standard_25': 125,
+                    'premium_50': 250,
+                    'farmer_basic_50': 250,
+                    'farmer_pro_100': 500,
+                    'enthusiast_standard_100': 500
+                };
+                
+                const amount = packageAmounts[this.value] || 100;
+                document.getElementById('amount').value = amount;
+                document.getElementById('displayAmount').textContent = amount;
+            });
+        });
+
+        // Payment method selection
+        document.querySelectorAll('.payment-method').forEach(method => {
+            method.addEventListener('click', function() {
+                document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedMethod = this.dataset.method;
+            });
+        });
+
+        // Process payment
+        async function processPayment() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const packageId = document.getElementById('packageId').value;
+
+            // Validation
+            if (!amount || amount < 1 || amount > 5000) {
+                alert('Please enter a valid amount between ₹1 and ₹5000');
+                return;
+            }
+
+            // Show processing screen
+            showProcessing();
+
+            try {
+                // Simulate order creation
+                await simulateStep('Creating payment order...', 1000);
+                currentOrderId = `demo_order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+                // Simulate payment method specific processing
+                await simulatePaymentMethod(selectedMethod, amount);
+
+                // Simulate final processing
+                await simulateStep('Finalizing payment...', 1000);
+
+                // Determine success/failure
+                const success = shouldPaymentSucceed(selectedMethod, amount);
+                
+                if (success) {
+                    showSuccess(amount);
+                } else {
+                    showError(selectedMethod);
+                }
+
+                // Update statistics
+                updateStatistics(success);
+
+            } catch (error) {
+                showError('NETWORK_ERROR');
+            }
+        }
+
+        // Simulate payment method specific processing
+        async function simulatePaymentMethod(method, amount) {
+            switch (method) {
+                case 'UPI':
+                    await simulateStep('Validating UPI ID...', 1000);
+                    await simulateStep('Connecting to UPI app...', 1500);
+                    await simulateStep('Enter UPI PIN in your app...', 3000);
+                    break;
+                
+                case 'GOOGLE_PAY':
+                    await simulateStep('Opening Google Pay...', 800);
+                    await simulateStep('Authenticating with Google Pay...', 1200);
+                    await simulateStep('Processing payment...', 1500);
+                    break;
+                
+                case 'CARD':
+                    await simulateStep('Validating card details...', 1500);
+                    await simulateStep('Connecting to bank...', 2000);
+                    await simulateStep('Authorizing payment...', 3000);
+                    if (amount > 2000) {
+                        await simulateStep('3D Secure authentication...', 4000);
+                    }
+                    break;
+                
+                case 'NET_BANKING':
+                    await simulateStep('Redirecting to bank website...', 2000);
+                    await simulateStep('Please login to your bank account...', 5000);
+                    await simulateStep('Authorizing transaction...', 3000);
+                    break;
+                
+                case 'WALLET':
+                    await simulateStep('Opening wallet app...', 1000);
+                    await simulateStep('Checking wallet balance...', 1500);
+                    await simulateStep('Authorizing payment...', 2000);
+                    break;
+            }
+        }
+
+        // Simulate processing step
+        function simulateStep(message, delay) {
+            return new Promise(resolve => {
+                document.getElementById('processingMessage').textContent = message;
+                setTimeout(resolve, delay);
+            });
+        }
+
+        // Determine payment success
+        function shouldPaymentSucceed(method, amount) {
+            const successRates = {
+                'UPI': 0.95,
+                'GOOGLE_PAY': 0.98,
+                'CARD': 0.92,
+                'NET_BANKING': 0.94,
+                'WALLET': 0.96
+            };
+
+            const baseRate = successRates[method] || 0.9;
+            const amountFactor = amount > 1000 ? 0.95 : 1.0;
+            
+            return Math.random() < (baseRate * amountFactor);
+        }
+
+        // Show processing screen
+        function showProcessing() {
+            document.getElementById('paymentForm').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('processing').style.display = 'block';
+        }
+
+        // Show success result
+        function showSuccess(amount) {
+            const paymentId = `demo_pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            document.getElementById('processing').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('result').className = 'result success';
+            
+            document.getElementById('resultIcon').textContent = '✅';
+            document.getElementById('resultTitle').textContent = 'Payment Successful!';
+            document.getElementById('resultMessage').textContent = `Your payment of ₹${amount} has been processed successfully.`;
+            document.getElementById('paymentId').textContent = `Payment ID: ${paymentId}`;
+        }
+
+        // Show error result
+        function showError(method) {
+            const errorMessages = {
+                'UPI': 'UPI payment failed. Please check your UPI PIN and try again.',
+                'GOOGLE_PAY': 'Google Pay authentication failed. Please try again.',
+                'CARD': 'Card payment declined. Please check your card details.',
+                'NET_BANKING': 'Net banking session timeout. Please try again.',
+                'WALLET': 'Insufficient wallet balance. Please add money to your wallet.',
+                'NETWORK_ERROR': 'Network error. Please check your connection and try again.'
+            };
+
+            document.getElementById('processing').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('result').className = 'result error';
+            
+            document.getElementById('resultIcon').textContent = '❌';
+            document.getElementById('resultTitle').textContent = 'Payment Failed';
+            document.getElementById('resultMessage').textContent = errorMessages[method] || 'Payment failed. Please try again.';
+            document.getElementById('paymentId').textContent = '';
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('paymentForm').style.display = 'block';
+            document.getElementById('processing').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+            
+            // Reset form values
+            document.getElementById('amount').value = 100;
+            document.getElementById('displayAmount').textContent = 100;
+            document.getElementById('packageId').value = 'basic_10';
+        }
+
+        // Update statistics
+        function updateStatistics(success) {
+            // Simulate updating statistics
+            const totalElement = document.getElementById('totalTransactions');
+            const currentTotal = parseInt(totalElement.textContent.replace(',', ''));
+            totalElement.textContent = (currentTotal + 1).toLocaleString();
+
+            if (success) {
+                // Update success rate slightly
+                const successElement = document.getElementById('successRate');
+                const currentRate = parseFloat(successElement.textContent.replace('%', ''));
+                const newRate = ((currentRate * currentTotal + 100) / (currentTotal + 1)).toFixed(2);
+                successElement.textContent = newRate + '%';
+            }
+
+            // Update total amount
+            const amountElement = document.getElementById('totalAmount');
+            const currentAmount = parseInt(amountElement.textContent.replace('₹', '').replace(',', ''));
+            const newAmount = currentAmount + parseInt(document.getElementById('amount').value);
+            amountElement.textContent = '₹' + newAmount.toLocaleString();
+        }
+    </script>
+</body>
+</html>

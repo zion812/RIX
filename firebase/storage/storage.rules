@@ -1,0 +1,202 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for RIO Platform
+// Optimized for rural India's 3-tier user system with transfer verification
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions for user authentication and authorization
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserId() {
+      return request.auth.uid;
+    }
+    
+    function getUserTier() {
+      return request.auth.token.userTier;
+    }
+    
+    function isOwner(userId) {
+      return getUserId() == userId;
+    }
+    
+    function isAdminOrModerator() {
+      return getUserTier() in ['ADMIN', 'MODERATOR'];
+    }
+    
+    function isFarmerOrEnthusiast() {
+      return getUserTier() in ['FARMER', 'ENTHUSIAST'];
+    }
+    
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidVideoType() {
+      return request.resource.contentType.matches('video/.*');
+    }
+    
+    function isValidDocumentType() {
+      return request.resource.contentType in ['application/pdf', 'image/jpeg', 'image/png'];
+    }
+    
+    // File size limits based on user tier and file type
+    function isWithinSizeLimit(maxSize) {
+      return request.resource.size <= maxSize;
+    }
+    
+    function getImageSizeLimit() {
+      return getUserTier() == 'GENERAL' ? 5 * 1024 * 1024 :    // 5MB for General
+             getUserTier() == 'FARMER' ? 10 * 1024 * 1024 :     // 10MB for Farmer
+             20 * 1024 * 1024;                                   // 20MB for Enthusiast
+    }
+    
+    function getVideoSizeLimit() {
+      return getUserTier() == 'GENERAL' ? 10 * 1024 * 1024 :    // 10MB for General
+             getUserTier() == 'FARMER' ? 30 * 1024 * 1024 :     // 30MB for Farmer
+             50 * 1024 * 1024;                                   // 50MB for Enthusiast
+    }
+    
+    // Rate limiting helper (simplified - would use Firestore for actual implementation)
+    function isWithinRateLimit() {
+      return true; // Implement with Firestore counters in production
+    }
+    
+    // User profile media rules
+    match /users/{userId}/profile/{allPaths=**} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdminOrModerator());
+      allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
+                   ((isValidImageType() && isWithinSizeLimit(getImageSizeLimit())) ||
+                    (isValidDocumentType() && isWithinSizeLimit(5 * 1024 * 1024)));
+    }
+    
+    // Fowl media rules - more permissive for viewing, strict for writing
+    match /users/{userId}/fowls/{fowlId}/{allPaths=**} {
+      // Read access: Owner, or public for marketplace listings
+      allow read: if isAuthenticated() && 
+                  (isOwner(userId) || 
+                   isAdminOrModerator() ||
+                   // Public read for marketplace photos (implement marketplace check)
+                   allPaths.matches('marketplace/.*/photos/.*'));
+      
+      // Write access: Only owner with proper file type and size
+      allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
+                   ((isValidImageType() && isWithinSizeLimit(getImageSizeLimit())) ||
+                    (isValidVideoType() && isWithinSizeLimit(getVideoSizeLimit())) ||
+                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024)));
+    }
+    
+    // Transfer verification media - CRITICAL SECURITY
+    match /users/{userId}/fowls/{fowlId}/transfers/{transferId}/{allPaths=**} {
+      // Read access: Transfer participants and admins only
+      allow read: if isAuthenticated() && 
+                  (isOwner(userId) || 
+                   isAdminOrModerator() ||
+                   // Check if user is transfer recipient (implement with Firestore lookup)
+                   isTransferParticipant(transferId));
+      
+      // Write access: Very strict - only during active transfer
+      allow write: if isAuthenticated() && 
+                   (isOwner(userId) || isTransferParticipant(transferId)) &&
+                   isActiveTransfer(transferId) &&
+                   isWithinRateLimit() &&
+                   ((isValidImageType() && isWithinSizeLimit(20 * 1024 * 1024)) ||
+                    (isValidVideoType() && isWithinSizeLimit(50 * 1024 * 1024)) ||
+                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024)));
+    }
+    
+    // Marketplace media rules
+    match /users/{userId}/fowls/{fowlId}/marketplace/{listingId}/{allPaths=**} {
+      // Public read access for active listings
+      allow read: if isAuthenticated();
+      
+      // Write access: Only listing owner
+      allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
+                   ((isValidImageType() && isWithinSizeLimit(getImageSizeLimit())) ||
+                    (isValidVideoType() && isWithinSizeLimit(getVideoSizeLimit())));
+    }
+    
+    // Health records - sensitive data
+    match /users/{userId}/fowls/{fowlId}/health/{allPaths=**} {
+      allow read: if isAuthenticated() && 
+                  (isOwner(userId) || 
+                   isAdminOrModerator() ||
+                   (isFarmerOrEnthusiast() && hasHealthRecordAccess(userId, fowlId)));
+      
+      allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
+                   ((isValidImageType() && isWithinSizeLimit(getImageSizeLimit())) ||
+                    (isValidDocumentType() && isWithinSizeLimit(5 * 1024 * 1024)));
+    }
+    
+    // Breeding documentation - valuable intellectual property
+    match /users/{userId}/fowls/{fowlId}/breeding/{allPaths=**} {
+      allow read: if isAuthenticated() && 
+                  (isOwner(userId) || 
+                   isAdminOrModerator() ||
+                   (isFarmerOrEnthusiast() && hasBreedingAccess(userId, fowlId)));
+      
+      allow write: if isAuthenticated() && isOwner(userId) && 
+                   isFarmerOrEnthusiast() && // Only Farmers and Enthusiasts can upload breeding docs
+                   isWithinRateLimit() &&
+                   ((isValidImageType() && isWithinSizeLimit(getImageSizeLimit())) ||
+                    (isValidVideoType() && isWithinSizeLimit(getVideoSizeLimit())) ||
+                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024)));
+    }
+    
+    // Temporary upload area - for chunked uploads and processing
+    match /temp/uploads/{sessionId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && 
+                         isOwner(getSessionOwner(sessionId)) &&
+                         isWithinRateLimit() &&
+                         isWithinSizeLimit(100 * 1024 * 1024); // 100MB temp limit
+    }
+    
+    // System files - admin only
+    match /system/{allPaths=**} {
+      allow read, write: if isAuthenticated() && isAdminOrModerator();
+    }
+    
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// Helper functions that would be implemented with Firestore lookups
+// These are placeholders for the actual implementation
+
+function isTransferParticipant(transferId) {
+  // Would check Firestore transfers collection to verify user is participant
+  return true; // Placeholder
+}
+
+function isActiveTransfer(transferId) {
+  // Would check if transfer is in INITIATED, PENDING_APPROVAL, or IN_TRANSIT status
+  return true; // Placeholder
+}
+
+function hasHealthRecordAccess(userId, fowlId) {
+  // Would check if user has been granted access to health records (vet, breeder, etc.)
+  return false; // Placeholder - default deny
+}
+
+function hasBreedingAccess(userId, fowlId) {
+  // Would check if user has breeding collaboration access
+  return false; // Placeholder - default deny
+}
+
+function getSessionOwner(sessionId) {
+  // Would extract user ID from session ID or lookup in Firestore
+  return ""; // Placeholder
+}
+
+// Additional security considerations:
+// 1. Implement rate limiting with Firestore counters
+// 2. Add virus scanning for uploaded files
+// 3. Implement content moderation for public images
+// 4. Add watermarking for premium content
+// 5. Implement EXIF data stripping for privacy
