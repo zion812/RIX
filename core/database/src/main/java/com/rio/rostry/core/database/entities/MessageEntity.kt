@@ -201,32 +201,42 @@ data class MessageEntity(
     @ColumnInfo(name = "local_media_path")
     val localMediaPath: String? = null,
     
-    // Sync metadata
-    @Embedded
-    val syncMetadata: SyncMetadata,
-    
-    // Conflict metadata
-    @Embedded
-    val conflictMetadata: ConflictMetadata = ConflictMetadata()
+    // Sync fields (flattened)
+    @ColumnInfo(name = "last_sync_time")
+    override val lastSyncTime: Date? = null,
+
+    @ColumnInfo(name = "sync_status")
+    val syncStatusString: String = "PENDING_UPLOAD",
+
+    @ColumnInfo(name = "conflict_version")
+    override val conflictVersion: Long = 1L,
+
+    @ColumnInfo(name = "is_deleted")
+    override val isDeleted: Boolean = false,
+
+    @ColumnInfo(name = "created_at")
+    override val createdAt: Date = Date(),
+
+    @ColumnInfo(name = "updated_at")
+    override val updatedAt: Date = Date(),
+
+    // Additional sync fields
+    @ColumnInfo(name = "sync_priority")
+    val syncPriority: Int = 1,
+
+    @ColumnInfo(name = "has_conflict")
+    val hasConflict: Boolean = false,
+
+    @ColumnInfo(name = "retry_count")
+    val retryCount: Int = 0,
+
+    @ColumnInfo(name = "data_size")
+    val dataSize: Long = 0L
 ) : SyncableEntity {
-    
-    override val lastSyncTime: Date?
-        get() = syncMetadata.lastSyncTime
-    
+
+    // SyncableEntity implementation
     override val syncStatus: SyncStatus
-        get() = syncMetadata.syncStatus
-    
-    override val conflictVersion: Long
-        get() = syncMetadata.conflictVersion
-    
-    override val isDeleted: Boolean
-        get() = syncMetadata.isDeleted
-    
-    override val createdAt: Date
-        get() = syncMetadata.createdAt
-    
-    override val updatedAt: Date
-        get() = syncMetadata.updatedAt
+        get() = SyncStatus.valueOf(syncStatusString)
 }
 
 /**
@@ -302,32 +312,42 @@ data class ConversationEntity(
     @ColumnInfo(name = "related_transfer_id")
     val relatedTransferId: String? = null,
     
-    // Sync metadata
-    @Embedded
-    val syncMetadata: SyncMetadata,
-    
-    // Conflict metadata
-    @Embedded
-    val conflictMetadata: ConflictMetadata = ConflictMetadata()
+    // Sync fields (flattened)
+    @ColumnInfo(name = "last_sync_time")
+    override val lastSyncTime: Date? = null,
+
+    @ColumnInfo(name = "sync_status")
+    val syncStatusString: String = "PENDING_UPLOAD",
+
+    @ColumnInfo(name = "conflict_version")
+    override val conflictVersion: Long = 1L,
+
+    @ColumnInfo(name = "is_deleted")
+    override val isDeleted: Boolean = false,
+
+    @ColumnInfo(name = "created_at")
+    override val createdAt: Date = Date(),
+
+    @ColumnInfo(name = "updated_at")
+    override val updatedAt: Date = Date(),
+
+    // Additional sync fields
+    @ColumnInfo(name = "sync_priority")
+    val syncPriority: Int = 1,
+
+    @ColumnInfo(name = "has_conflict")
+    val hasConflict: Boolean = false,
+
+    @ColumnInfo(name = "retry_count")
+    val retryCount: Int = 0,
+
+    @ColumnInfo(name = "data_size")
+    val dataSize: Long = 0L
 ) : SyncableEntity {
-    
-    override val lastSyncTime: Date?
-        get() = syncMetadata.lastSyncTime
-    
+
+    // SyncableEntity implementation
     override val syncStatus: SyncStatus
-        get() = syncMetadata.syncStatus
-    
-    override val conflictVersion: Long
-        get() = syncMetadata.conflictVersion
-    
-    override val isDeleted: Boolean
-        get() = syncMetadata.isDeleted
-    
-    override val createdAt: Date
-        get() = syncMetadata.createdAt
-    
-    override val updatedAt: Date
-        get() = syncMetadata.updatedAt
+        get() = SyncStatus.valueOf(syncStatusString)
 }
 
 /**
@@ -392,7 +412,7 @@ interface MessageDao : BaseSyncableDao<MessageEntity> {
     override suspend fun updateConflictVersion(id: String, version: Long)
     
     @Query("UPDATE messages SET is_deleted = 1, updated_at = :deletedAt WHERE id = :id")
-    override suspend fun markAsDeleted(id: String)
+    override suspend fun markAsDeleted(id: String, deletedAt: Date)
     
     @Query("UPDATE messages SET retry_count = retry_count + 1 WHERE id = :id")
     override suspend fun incrementRetryCount(id: String)
@@ -404,7 +424,7 @@ interface MessageDao : BaseSyncableDao<MessageEntity> {
     @Query("DELETE FROM messages WHERE sync_status = 'SYNCED' AND updated_at < :olderThan AND sync_priority = 'LOW'")
     override suspend fun deleteOldSyncedItems(olderThan: Date): Int
     
-    @Query("DELETE FROM messages WHERE sync_priority = 'LOW' AND sync_status = 'SYNCED' ORDER BY last_sync_time ASC LIMIT :limit")
+    @Query("DELETE FROM messages WHERE id IN (SELECT id FROM messages WHERE sync_priority = 'LOW' AND sync_status = 'SYNCED' ORDER BY last_sync_time ASC LIMIT :limit)")
     override suspend fun deleteLowPriorityItems(limit: Int): Int
     
     @Query("SELECT SUM(data_size) FROM messages")
@@ -471,7 +491,7 @@ interface ConversationDao : BaseSyncableDao<ConversationEntity> {
     override suspend fun updateConflictVersion(id: String, version: Long)
     
     @Query("UPDATE conversations SET is_deleted = 1, updated_at = :deletedAt WHERE id = :id")
-    override suspend fun markAsDeleted(id: String)
+    override suspend fun markAsDeleted(id: String, deletedAt: Date)
     
     @Query("UPDATE conversations SET retry_count = retry_count + 1 WHERE id = :id")
     override suspend fun incrementRetryCount(id: String)
@@ -483,7 +503,7 @@ interface ConversationDao : BaseSyncableDao<ConversationEntity> {
     @Query("DELETE FROM conversations WHERE sync_status = 'SYNCED' AND updated_at < :olderThan AND sync_priority = 'LOW'")
     override suspend fun deleteOldSyncedItems(olderThan: Date): Int
     
-    @Query("DELETE FROM conversations WHERE sync_priority = 'LOW' AND sync_status = 'SYNCED' ORDER BY last_sync_time ASC LIMIT :limit")
+    @Query("DELETE FROM conversations WHERE id IN (SELECT id FROM conversations WHERE sync_priority = 'LOW' AND sync_status = 'SYNCED' ORDER BY last_sync_time ASC LIMIT :limit)")
     override suspend fun deleteLowPriorityItems(limit: Int): Int
     
     @Query("SELECT SUM(data_size) FROM conversations")

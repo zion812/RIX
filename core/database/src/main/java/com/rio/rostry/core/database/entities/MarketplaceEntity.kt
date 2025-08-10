@@ -274,36 +274,50 @@ data class MarketplaceEntity(
     @ColumnInfo(name = "listing_quality")
     val listingQuality: String = "MEDIUM", // HIGH, MEDIUM, LOW
     
-    // Regional metadata
-    @Embedded
-    val regionalMetadata: RegionalMetadata,
-    
-    // Sync metadata
-    @Embedded
-    val syncMetadata: SyncMetadata,
-    
-    // Conflict metadata
-    @Embedded
-    val conflictMetadata: ConflictMetadata = ConflictMetadata()
+    // Regional information (flattened)
+    val region: String = "",
+    val district: String = "",
+    val mandal: String? = null,
+    val village: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+
+    // Sync fields (flattened)
+    @ColumnInfo(name = "last_sync_time")
+    override val lastSyncTime: Date? = null,
+
+    @ColumnInfo(name = "sync_status")
+    val syncStatusString: String = "PENDING_UPLOAD",
+
+    @ColumnInfo(name = "conflict_version")
+    override val conflictVersion: Long = 1L,
+
+    @ColumnInfo(name = "is_deleted")
+    override val isDeleted: Boolean = false,
+
+    @ColumnInfo(name = "created_at")
+    override val createdAt: Date = Date(),
+
+    @ColumnInfo(name = "updated_at")
+    override val updatedAt: Date = Date(),
+
+    // Additional sync fields
+    @ColumnInfo(name = "sync_priority")
+    val syncPriority: Int = 1,
+
+    @ColumnInfo(name = "has_conflict")
+    val hasConflict: Boolean = false,
+
+    @ColumnInfo(name = "retry_count")
+    val retryCount: Int = 0,
+
+    @ColumnInfo(name = "data_size")
+    val dataSize: Long = 0L
 ) : SyncableEntity {
-    
-    override val lastSyncTime: Date?
-        get() = syncMetadata.lastSyncTime
-    
+
+    // SyncableEntity implementation
     override val syncStatus: SyncStatus
-        get() = syncMetadata.syncStatus
-    
-    override val conflictVersion: Long
-        get() = syncMetadata.conflictVersion
-    
-    override val isDeleted: Boolean
-        get() = syncMetadata.isDeleted
-    
-    override val createdAt: Date
-        get() = syncMetadata.createdAt
-    
-    override val updatedAt: Date
-        get() = syncMetadata.updatedAt
+        get() = SyncStatus.valueOf(syncStatusString)
 }
 
 /**
@@ -392,7 +406,7 @@ interface MarketplaceDao : BaseSyncableDao<MarketplaceEntity> {
     override suspend fun updateConflictVersion(id: String, version: Long)
     
     @Query("UPDATE marketplace_listings SET is_deleted = 1, updated_at = :deletedAt WHERE id = :id")
-    override suspend fun markAsDeleted(id: String)
+    override suspend fun markAsDeleted(id: String, deletedAt: Date)
     
     @Query("UPDATE marketplace_listings SET retry_count = retry_count + 1 WHERE id = :id")
     override suspend fun incrementRetryCount(id: String)
@@ -404,7 +418,7 @@ interface MarketplaceDao : BaseSyncableDao<MarketplaceEntity> {
     @Query("DELETE FROM marketplace_listings WHERE sync_status = 'SYNCED' AND updated_at < :olderThan AND sync_priority = 'LOW'")
     override suspend fun deleteOldSyncedItems(olderThan: Date): Int
     
-    @Query("DELETE FROM marketplace_listings WHERE sync_priority = 'LOW' AND sync_status = 'SYNCED' ORDER BY last_sync_time ASC LIMIT :limit")
+    @Query("DELETE FROM marketplace_listings WHERE id IN (SELECT id FROM marketplace_listings WHERE sync_priority = 'LOW' AND sync_status = 'SYNCED' ORDER BY last_sync_time ASC LIMIT :limit)")
     override suspend fun deleteLowPriorityItems(limit: Int): Int
     
     @Query("SELECT SUM(data_size) FROM marketplace_listings")
@@ -443,11 +457,11 @@ interface MarketplaceDao : BaseSyncableDao<MarketplaceEntity> {
 data class MarketplaceSummary(
     val id: String,
     val title: String,
-    val basePrice: Double,
+    @ColumnInfo(name = "base_price") val basePrice: Double,
     val breed: String,
-    val primaryPhotoUrl: String?,
+    @ColumnInfo(name = "primary_photo_url") val primaryPhotoUrl: String?,
     val region: String,
     val district: String,
-    val listingStatus: String,
-    val sellerId: String
+    @ColumnInfo(name = "listing_status") val listingStatus: String,
+    @ColumnInfo(name = "seller_id") val sellerId: String
 )

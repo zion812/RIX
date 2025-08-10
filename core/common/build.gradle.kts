@@ -38,9 +38,6 @@ android {
 }
 
 dependencies {
-    // Note: core:common should not depend on database module to avoid circular dependencies
-    // Remove UserEntity references from DataValidator.kt
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.androidx.compose.bom))
@@ -49,7 +46,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
-    // Fragment
+    // Fragment and ViewBinding
     implementation("androidx.fragment:fragment-ktx:1.6.2")
 
     // Navigation
@@ -59,8 +56,16 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // Dependency Injection
-    implementation("javax.inject:javax.inject:1")
+    // Dependency Injection - Dagger Hilt
+    implementation("com.google.dagger:hilt-android:2.48")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
+    // Room Database
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Date/Time
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")

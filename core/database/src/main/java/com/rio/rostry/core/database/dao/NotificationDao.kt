@@ -203,5 +203,13 @@ interface NotificationAnalyticsDao {
     suspend fun getEventCountSince(eventType: String, startDate: Date): Int
     
     @Query("SELECT eventType, COUNT(*) as count FROM notification_analytics WHERE timestamp >= :startDate GROUP BY eventType")
-    suspend fun getEventCountsByType(startDate: Date): Map<String, Int>
+    suspend fun getEventCountsByType(startDate: Date): List<EventTypeCount>
 }
+
+/**
+ * Data class for event type count results
+ */
+data class EventTypeCount(
+    val eventType: String,
+    val count: Int
+)

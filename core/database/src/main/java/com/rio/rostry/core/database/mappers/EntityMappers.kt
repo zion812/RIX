@@ -12,28 +12,28 @@ import com.rio.rostry.shared.domain.model.*
  */
 fun UserEntity.toDomain(): User = User(
     id = id,
-    email = email,
+    email = email ?: "",
     displayName = displayName,
     userTier = UserTier.valueOf(userTier),
     verificationStatus = VerificationStatus.valueOf(verificationStatus),
     phoneNumber = phoneNumber,
     profilePhoto = profilePhoto,
     bio = bio,
-    region = regionalMetadata.region,
-    district = regionalMetadata.district,
+    region = region,
+    district = district,
     farmName = farmName,
-    specializations = specializations,
-    rating = rating,
-    reviewCount = reviewCount,
-    fowlCount = fowlCount,
-    successfulTransactions = successfulTransactions,
-    language = language,
+    specializations = specializations.joinToString(","),
+    rating = rating ?: 0.0,
+    reviewCount = reviewCount ?: 0,
+    fowlCount = fowlCount ?: 0,
+    successfulTransactions = successfulTransactions ?: 0,
+    language = language ?: "en",
     lastActiveAt = lastActiveAt,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
 
-fun User.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): UserEntity = UserEntity(
+fun User.toEntity(): UserEntity = UserEntity(
     id = id,
     email = email,
     displayName = displayName,
@@ -43,21 +43,17 @@ fun User.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): UserEntity = Use
     profilePhoto = profilePhoto,
     bio = bio,
     farmName = farmName,
-    specializations = specializations,
+    specializations = specializations?.takeIf { it.isNotEmpty() }?.split(",") ?: emptyList(),
     rating = rating,
     reviewCount = reviewCount,
     fowlCount = fowlCount,
     successfulTransactions = successfulTransactions,
     language = language,
     lastActiveAt = lastActiveAt,
-    regionalMetadata = RegionalMetadata(
-        region = region,
-        district = district
-    ),
-    syncMetadata = syncMetadata.copy(
-        createdAt = createdAt,
-        updatedAt = updatedAt
-    )
+    region = region,
+    district = district,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )
 
 /**
@@ -66,33 +62,34 @@ fun User.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): UserEntity = Use
 fun FowlEntity.toDomain(): Fowl = Fowl(
     id = id,
     ownerId = ownerId,
-    name = name,
+    name = name ?: "Unknown",
     breedPrimary = breedPrimary,
     breedSecondary = breedSecondary,
     gender = Gender.valueOf(gender),
     birthDate = birthDate,
     ageCategory = AgeCategory.valueOf(ageCategory),
     color = color,
-    weight = weight,
-    height = height,
+    weight = weight ?: 0.0,
+    height = height ?: 0.0,
+    description = notes, // Map notes to description
     healthStatus = HealthStatus.valueOf(healthStatus),
     availabilityStatus = AvailabilityStatus.valueOf(availabilityStatus),
     fatherId = fatherId,
     motherId = motherId,
-    generation = generation,
+    generation = generation ?: 1,
     primaryPhoto = primaryPhoto,
     photos = photos,
     registrationNumber = registrationNumber,
     qrCode = qrCode,
     notes = notes,
     tags = tags,
-    region = regionalMetadata.region,
-    district = regionalMetadata.district,
+    region = region,
+    district = district,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
 
-fun Fowl.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): FowlEntity = FowlEntity(
+fun Fowl.toEntity(): FowlEntity = FowlEntity(
     id = id,
     ownerId = ownerId,
     name = name,
@@ -101,9 +98,9 @@ fun Fowl.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): FowlEntity = Fow
     gender = gender.name,
     birthDate = birthDate,
     ageCategory = ageCategory.name,
-    color = color,
-    weight = weight,
-    height = height,
+    color = color ?: "Unknown",
+    weight = weight ?: 0.0,
+    height = height ?: 0.0,
     combType = "SINGLE", // Default value
     legColor = "YELLOW", // Default value
     eyeColor = "RED", // Default value
@@ -118,14 +115,10 @@ fun Fowl.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): FowlEntity = Fow
     qrCode = qrCode,
     notes = notes,
     tags = tags,
-    regionalMetadata = RegionalMetadata(
-        region = region,
-        district = district
-    ),
-    syncMetadata = syncMetadata.copy(
-        createdAt = createdAt,
-        updatedAt = updatedAt
-    )
+    region = region,
+    district = district,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )
 
 /**
@@ -137,66 +130,62 @@ fun MarketplaceEntity.toDomain(): MarketplaceListing = MarketplaceListing(
     fowlId = fowlId,
     title = title,
     description = description,
+    price = basePrice,
+    currency = currency,
     listingType = ListingType.valueOf(listingType),
-    basePrice = basePrice,
-    currentBid = currentBid,
-    buyNowPrice = buyNowPrice,
-    listingStatus = ListingStatus.valueOf(listingStatus),
+    status = ListingStatus.valueOf(listingStatus),
+    category = category ?: "POULTRY",
     breed = breed,
     gender = Gender.valueOf(gender),
     age = age,
-    weight = weight,
-    healthStatus = HealthStatus.valueOf(healthStatus),
-    primaryPhotoUrl = primaryPhotoUrl,
+    location = "$district, $region",
     photos = photos,
+    features = highlights, // Map highlights to features
+    healthCertified = vaccinated,
+    lineageVerified = pedigreeAvailable,
+    negotiable = listingType == "NEGOTIABLE",
     deliveryAvailable = deliveryAvailable,
-    auctionStartTime = auctionStartTime,
-    auctionEndTime = auctionEndTime,
-    views = views,
-    favorites = favorites,
-    region = regionalMetadata.region,
-    district = regionalMetadata.district,
-    publishedAt = publishedAt,
+    deliveryRadius = deliveryRadius,
+    contactPreference = ContactPreference.PHONE, // Default value
+    viewCount = views ?: 0,
+    favoriteCount = favorites ?: 0,
+    inquiryCount = inquiries ?: 0,
+    region = region,
+    district = district,
     expiresAt = expiresAt,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
 
-fun MarketplaceListing.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): MarketplaceEntity = MarketplaceEntity(
+fun MarketplaceListing.toEntity(): MarketplaceEntity = MarketplaceEntity(
     id = id,
     sellerId = sellerId,
     fowlId = fowlId,
     title = title,
     description = description,
     listingType = listingType.name,
-    basePrice = basePrice,
-    currentBid = currentBid,
-    buyNowPrice = buyNowPrice,
-    listingStatus = listingStatus.name,
+    basePrice = price,
+    currency = currency,
+    listingStatus = status.name,
     breed = breed,
     gender = gender.name,
     age = age,
-    weight = weight,
+    weight = 0.0, // Default value
     color = "UNKNOWN", // Default value
-    healthStatus = healthStatus.name,
-    primaryPhotoUrl = primaryPhotoUrl,
+    healthStatus = "HEALTHY", // Default value
+    vaccinated = healthCertified,
+    pedigreeAvailable = lineageVerified,
+    registrationPapers = false, // Default value
+    highlights = features,
     photos = photos,
     deliveryAvailable = deliveryAvailable,
-    auctionStartTime = auctionStartTime,
-    auctionEndTime = auctionEndTime,
-    views = views,
-    favorites = favorites,
-    category = "POULTRY", // Default value
-    regionalMetadata = RegionalMetadata(
-        region = region,
-        district = district
-    ),
-    syncMetadata = syncMetadata.copy(
-        createdAt = createdAt,
-        updatedAt = updatedAt
-    ),
-    publishedAt = publishedAt,
-    expiresAt = expiresAt
+    deliveryRadius = deliveryRadius ?: 0,
+    category = category,
+    region = region,
+    district = district,
+    expiresAt = expiresAt,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )
 
 /**
@@ -209,42 +198,31 @@ fun MessageEntity.toDomain(): Message = Message(
     messageType = MessageType.valueOf(messageType),
     textContent = textContent,
     mediaUrl = mediaUrl,
-    mediaCaption = mediaCaption,
-    cardId = cardId,
-    cardData = cardData,
-    latitude = latitude,
-    longitude = longitude,
-    replyToMessageId = replyToMessageId,
-    forwarded = forwarded,
-    edited = edited,
-    sentAt = sentAt,
-    deliveryStatus = DeliveryStatus.valueOf(deliveryStatus),
-    deliveredAt = deliveredAt,
+    mediaType = mimeType,
+    fowlId = cardId, // Use cardId for fowlId
+    listingId = cardId, // Use cardId for listingId
+    isRead = readAt != null,
+    isDelivered = deliveredAt != null,
     readAt = readAt,
-    reactions = reactions
+    deliveredAt = deliveredAt,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )
 
-fun Message.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): MessageEntity = MessageEntity(
+fun Message.toEntity(): MessageEntity = MessageEntity(
     id = id,
     conversationId = conversationId,
     senderId = senderId,
     messageType = messageType.name,
     textContent = textContent,
     mediaUrl = mediaUrl,
-    mediaCaption = mediaCaption,
-    cardId = cardId,
-    cardData = cardData,
-    latitude = latitude,
-    longitude = longitude,
-    replyToMessageId = replyToMessageId,
-    forwarded = forwarded,
-    edited = edited,
-    sentAt = sentAt,
-    deliveryStatus = deliveryStatus.name,
-    deliveredAt = deliveredAt,
-    readAt = readAt,
-    reactions = reactions,
-    syncMetadata = syncMetadata
+    mimeType = mediaType,
+    cardId = fowlId ?: listingId, // Use fowlId or listingId for cardId
+    sentAt = createdAt,
+    readAt = if (isRead) readAt else null,
+    deliveredAt = if (isDelivered) deliveredAt else null,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )
 
 /**
@@ -253,33 +231,29 @@ fun Message.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): MessageEntity
 fun ConversationEntity.toDomain(): Conversation = Conversation(
     id = id,
     conversationType = ConversationType.valueOf(conversationType),
-    title = title,
+    title = title ?: "",
     participants = participants,
     lastMessageId = lastMessageId,
-    lastActivityAt = lastActivityAt,
-    messageCount = messageCount,
+    lastMessageAt = lastActivityAt,
     unreadCount = unreadCount,
-    relatedListingId = relatedListingId,
-    relatedFowlId = relatedFowlId,
+    isArchived = false, // Default value - field not in entity
+    isMuted = muteNotifications,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
 
-fun Conversation.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): ConversationEntity = ConversationEntity(
+fun Conversation.toEntity(): ConversationEntity = ConversationEntity(
     id = id,
     conversationType = conversationType.name,
     title = title,
     participants = participants,
     lastMessageId = lastMessageId,
-    lastActivityAt = lastActivityAt,
-    messageCount = messageCount,
+    lastActivityAt = lastMessageAt ?: createdAt,
     unreadCount = unreadCount,
-    relatedListingId = relatedListingId,
-    relatedFowlId = relatedFowlId,
-    syncMetadata = syncMetadata.copy(
-        createdAt = createdAt,
-        updatedAt = updatedAt
-    )
+    // isArchived field not available in entity
+    muteNotifications = isMuted,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )
 
 /**
@@ -291,43 +265,40 @@ fun TransferEntity.toDomain(): Transfer = Transfer(
     fromUserId = fromUserId,
     toUserId = toUserId,
     transferType = TransferType.valueOf(transferType),
-    transferStatus = TransferStatus.valueOf(transferStatus),
-    amount = amount,
-    paymentStatus = PaymentStatus.valueOf(paymentStatus),
-    verificationRequired = verificationRequired,
-    verificationStatus = VerificationStatus.valueOf(verificationStatus),
-    deliveryAddress = deliveryAddress,
-    trackingNumber = trackingNumber,
-    transferNotes = transferNotes,
-    relatedListingId = relatedListingId,
-    initiatedAt = initiatedAt,
+    status = TransferStatus.valueOf(transferStatus),
+    price = amount,
+    currency = currency,
+    paymentMethod = paymentMethod,
+    transferDate = initiatedAt,
     completedAt = completedAt,
-    region = regionalMetadata.region,
-    district = regionalMetadata.district
+    notes = transferNotes,
+    documents = verificationDocuments,
+    region = region,
+    district = district,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )
 
-fun Transfer.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): TransferEntity = TransferEntity(
+fun Transfer.toEntity(): TransferEntity = TransferEntity(
     id = id,
     fowlId = fowlId,
     fromUserId = fromUserId,
     toUserId = toUserId,
     transferType = transferType.name,
-    transferStatus = transferStatus.name,
-    amount = amount,
-    paymentStatus = paymentStatus.name,
-    verificationRequired = verificationRequired,
-    verificationStatus = verificationStatus.name,
-    deliveryAddress = deliveryAddress,
-    trackingNumber = trackingNumber,
-    transferNotes = transferNotes,
-    relatedListingId = relatedListingId,
-    initiatedAt = initiatedAt,
+    transferStatus = status.name,
+    transferMethod = "DIRECT", // Default value
+    amount = price,
+    currency = currency ?: "INR",
+    paymentMethod = paymentMethod,
+    initiatedAt = transferDate ?: createdAt,
     completedAt = completedAt,
-    regionalMetadata = RegionalMetadata(
-        region = region,
-        district = district
-    ),
-    syncMetadata = syncMetadata
+    transferNotes = notes,
+    verificationDocuments = documents,
+    deliveryAddress = "", // Default value - required field
+    region = region,
+    district = district,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )
 
 /**
@@ -341,18 +312,19 @@ fun BreedingRecordEntity.toDomain(): BreedingRecord = BreedingRecord(
     breedingDate = breedingDate,
     expectedHatchDate = expectedHatchDate,
     actualHatchDate = actualHatchDate,
-    eggsLaid = eggsLaid,
-    chicksHatched = chicksHatched,
+    eggCount = eggsLaid,
+    hatchCount = chicksHatched,
     breedingMethod = BreedingMethod.valueOf(breedingMethod),
     breedingPurpose = BreedingPurpose.valueOf(breedingPurpose),
-    offspringIds = offspringIds,
+    offspringIds = offspringIds?.split(",") ?: emptyList(),
     notes = notes,
-    region = regionalMetadata.region,
-    district = regionalMetadata.district,
-    createdAt = createdAt
+    region = region,
+    district = district,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )
 
-fun BreedingRecord.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): BreedingRecordEntity = BreedingRecordEntity(
+fun BreedingRecord.toEntity(): BreedingRecordEntity = BreedingRecordEntity(
     id = id,
     sireId = sireId,
     damId = damId,
@@ -360,17 +332,14 @@ fun BreedingRecord.toEntity(syncMetadata: SyncMetadata = SyncMetadata()): Breedi
     breedingDate = breedingDate,
     expectedHatchDate = expectedHatchDate,
     actualHatchDate = actualHatchDate,
-    eggsLaid = eggsLaid,
-    chicksHatched = chicksHatched,
+    eggsLaid = eggCount,
+    chicksHatched = hatchCount,
     breedingMethod = breedingMethod.name,
     breedingPurpose = breedingPurpose.name,
-    offspringIds = offspringIds,
+    offspringIds = offspringIds.joinToString(","),
     notes = notes,
-    regionalMetadata = RegionalMetadata(
-        region = region,
-        district = district
-    ),
-    syncMetadata = syncMetadata.copy(
-        createdAt = createdAt
-    )
+    region = region,
+    district = district,
+    createdAt = createdAt,
+    updatedAt = updatedAt
 )

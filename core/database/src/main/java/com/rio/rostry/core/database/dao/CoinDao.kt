@@ -284,13 +284,13 @@ interface CoinPackageDao {
     suspend fun getValidPackages(currentTime: Date = Date()): List<CoinPackageEntity>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(package: CoinPackageEntity)
-    
+    suspend fun insert(coinPackage: CoinPackageEntity)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(packages: List<CoinPackageEntity>)
-    
+
     @Update
-    suspend fun update(package: CoinPackageEntity)
+    suspend fun update(coinPackage: CoinPackageEntity)
     
     @Query("UPDATE coin_packages SET active = 0 WHERE package_id = :packageId")
     suspend fun deactivatePackage(packageId: String)

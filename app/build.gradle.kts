@@ -45,7 +45,7 @@ android {
 dependencies {
     // Core modules
     implementation(project(":core:common"))
-    implementation(project(":core:data"))
+    // implementation(project(":core:data")) // Temporarily disabled
     implementation(project(":core:database"))
     implementation(project(":core:network"))
     implementation(project(":core:analytics"))

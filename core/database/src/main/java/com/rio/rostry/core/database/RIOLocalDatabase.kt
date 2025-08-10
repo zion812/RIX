@@ -20,7 +20,7 @@ import java.util.*
         MessageEntity::class,
         ConversationEntity::class,
         TransferEntity::class,
-        BreedingRecordEntity::class,
+        // BreedingRecordEntity::class, // Removed - not implemented
 
         // Coin payment system entities
         CoinTransactionEntity::class,
@@ -33,11 +33,11 @@ import java.util.*
         UserCoinBalanceEntity::class,
 
         // Sync and cache entities
-        SyncQueueEntity::class,
+        // SyncQueueEntity::class, // Removed - not implemented
         OfflineActionEntity::class,
 
         // Supporting entities
-        MediaEntity::class,
+        // MediaEntity::class, // Removed - not implemented
         NotificationEntity::class,
         NotificationPreferenceEntity::class,
         TopicSubscriptionEntity::class,
@@ -56,10 +56,10 @@ abstract class RIOLocalDatabase : RoomDatabase() {
     abstract fun messageDao(): MessageDao
     abstract fun conversationDao(): ConversationDao
     abstract fun transferDao(): TransferDao
-    abstract fun breedingRecordDao(): BreedingRecordDao
+    // abstract fun breedingRecordDao(): BreedingRecordDao // Removed - not implemented
 
     // Sync and cache DAOs
-    abstract fun syncQueueDao(): SyncQueueDao
+    // abstract fun syncQueueDao(): SyncQueueDao // Removed - not implemented
     abstract fun offlineActionDao(): OfflineActionDao
 
     // Coin payment system DAOs
@@ -71,7 +71,7 @@ abstract class RIOLocalDatabase : RoomDatabase() {
     abstract fun coinPackageDao(): CoinPackageDao
 
     // Supporting DAOs
-    abstract fun mediaDao(): MediaDao
+    // abstract fun mediaDao(): MediaDao // Removed - not implemented
     abstract fun notificationDao(): NotificationDao
     abstract fun notificationPreferenceDao(): NotificationPreferenceDao
     abstract fun topicSubscriptionDao(): TopicSubscriptionDao

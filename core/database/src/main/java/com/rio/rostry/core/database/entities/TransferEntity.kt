@@ -252,36 +252,50 @@ data class TransferEntity(
     @ColumnInfo(name = "blockchain_verified")
     val blockchainVerified: Boolean = false,
     
-    // Regional metadata
-    @Embedded
-    val regionalMetadata: RegionalMetadata,
-    
-    // Sync metadata
-    @Embedded
-    val syncMetadata: SyncMetadata,
-    
-    // Conflict metadata
-    @Embedded
-    val conflictMetadata: ConflictMetadata = ConflictMetadata()
+    // Regional information (flattened)
+    val region: String = "",
+    val district: String = "",
+    val mandal: String? = null,
+    val village: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+
+    // Sync fields (flattened)
+    @ColumnInfo(name = "last_sync_time")
+    override val lastSyncTime: Date? = null,
+
+    @ColumnInfo(name = "sync_status")
+    val syncStatusString: String = "PENDING_UPLOAD",
+
+    @ColumnInfo(name = "conflict_version")
+    override val conflictVersion: Long = 1L,
+
+    @ColumnInfo(name = "is_deleted")
+    override val isDeleted: Boolean = false,
+
+    @ColumnInfo(name = "created_at")
+    override val createdAt: Date = Date(),
+
+    @ColumnInfo(name = "updated_at")
+    override val updatedAt: Date = Date(),
+
+    // Additional sync fields
+    @ColumnInfo(name = "sync_priority")
+    val syncPriority: Int = 1,
+
+    @ColumnInfo(name = "has_conflict")
+    val hasConflict: Boolean = false,
+
+    @ColumnInfo(name = "retry_count")
+    val retryCount: Int = 0,
+
+    @ColumnInfo(name = "data_size")
+    val dataSize: Long = 0L
 ) : SyncableEntity {
-    
-    override val lastSyncTime: Date?
-        get() = syncMetadata.lastSyncTime
-    
+
+    // SyncableEntity implementation
     override val syncStatus: SyncStatus
-        get() = syncMetadata.syncStatus
-    
-    override val conflictVersion: Long
-        get() = syncMetadata.conflictVersion
-    
-    override val isDeleted: Boolean
-        get() = syncMetadata.isDeleted
-    
-    override val createdAt: Date
-        get() = syncMetadata.createdAt
-    
-    override val updatedAt: Date
-        get() = syncMetadata.updatedAt
+        get() = SyncStatus.valueOf(syncStatusString)
 }
 
 /**
@@ -381,7 +395,7 @@ interface TransferDao : BaseSyncableDao<TransferEntity> {
     override suspend fun updateConflictVersion(id: String, version: Long)
     
     @Query("UPDATE transfers SET is_deleted = 1, updated_at = :deletedAt WHERE id = :id")
-    override suspend fun markAsDeleted(id: String)
+    override suspend fun markAsDeleted(id: String, deletedAt: Date)
     
     @Query("UPDATE transfers SET retry_count = retry_count + 1 WHERE id = :id")
     override suspend fun incrementRetryCount(id: String)
@@ -393,7 +407,7 @@ interface TransferDao : BaseSyncableDao<TransferEntity> {
     @Query("DELETE FROM transfers WHERE sync_status = 'SYNCED' AND updated_at < :olderThan AND sync_priority = 'LOW'")
     override suspend fun deleteOldSyncedItems(olderThan: Date): Int
     
-    @Query("DELETE FROM transfers WHERE sync_priority = 'LOW' AND sync_status = 'SYNCED' ORDER BY last_sync_time ASC LIMIT :limit")
+    @Query("DELETE FROM transfers WHERE id IN (SELECT id FROM transfers WHERE sync_priority = 'LOW' AND sync_status = 'SYNCED' ORDER BY last_sync_time ASC LIMIT :limit)")
     override suspend fun deleteLowPriorityItems(limit: Int): Int
     
     @Query("SELECT SUM(data_size) FROM transfers")
@@ -431,10 +445,10 @@ interface TransferDao : BaseSyncableDao<TransferEntity> {
  */
 data class TransferSummary(
     val id: String,
-    val fowlId: String,
-    val fromUserId: String,
-    val toUserId: String,
-    val transferStatus: String,
+    @ColumnInfo(name = "fowl_id") val fowlId: String,
+    @ColumnInfo(name = "from_user_id") val fromUserId: String,
+    @ColumnInfo(name = "to_user_id") val toUserId: String,
+    @ColumnInfo(name = "transfer_status") val transferStatus: String,
     val amount: Double?,
-    val initiatedAt: Date
+    @ColumnInfo(name = "initiated_at") val initiatedAt: Date
 )

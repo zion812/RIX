@@ -38,92 +38,9 @@ enum class SyncPriority(val value: Int) {
     LOW(4)          // General browsing data, cached content
 }
 
-/**
- * Base sync metadata embedded in all entities
- */
-@Embeddable
-data class SyncMetadata(
-    @ColumnInfo(name = "last_sync_time")
-    val lastSyncTime: Date? = null,
-    
-    @ColumnInfo(name = "sync_status")
-    val syncStatus: SyncStatus = SyncStatus.PENDING_UPLOAD,
-    
-    @ColumnInfo(name = "conflict_version")
-    val conflictVersion: Long = 1L,
-    
-    @ColumnInfo(name = "is_deleted")
-    val isDeleted: Boolean = false,
-    
-    @ColumnInfo(name = "created_at")
-    val createdAt: Date = Date(),
-    
-    @ColumnInfo(name = "updated_at")
-    val updatedAt: Date = Date(),
-    
-    @ColumnInfo(name = "sync_priority")
-    val syncPriority: SyncPriority = SyncPriority.MEDIUM,
-    
-    @ColumnInfo(name = "retry_count")
-    val retryCount: Int = 0,
-    
-    @ColumnInfo(name = "last_error")
-    val lastError: String? = null,
-    
-    @ColumnInfo(name = "compressed_data")
-    val compressedData: Boolean = false,
-    
-    @ColumnInfo(name = "data_size")
-    val dataSize: Long = 0L
-)
+// Removed SyncMetadata - using flattened fields in entities
 
-/**
- * Regional metadata for efficient offline queries
- */
-@Embeddable
-data class RegionalMetadata(
-    @ColumnInfo(name = "region")
-    val region: String,
-    
-    @ColumnInfo(name = "district")
-    val district: String,
-    
-    @ColumnInfo(name = "mandal")
-    val mandal: String? = null,
-    
-    @ColumnInfo(name = "village")
-    val village: String? = null,
-    
-    @ColumnInfo(name = "latitude")
-    val latitude: Double? = null,
-    
-    @ColumnInfo(name = "longitude")
-    val longitude: Double? = null
-)
-
-/**
- * Conflict resolution metadata
- */
-@Embeddable
-data class ConflictMetadata(
-    @ColumnInfo(name = "has_conflict")
-    val hasConflict: Boolean = false,
-    
-    @ColumnInfo(name = "conflict_detected_at")
-    val conflictDetectedAt: Date? = null,
-    
-    @ColumnInfo(name = "server_version")
-    val serverVersion: Long? = null,
-    
-    @ColumnInfo(name = "local_version")
-    val localVersion: Long? = null,
-    
-    @ColumnInfo(name = "conflict_resolution_strategy")
-    val conflictResolutionStrategy: ConflictResolutionStrategy? = null,
-    
-    @ColumnInfo(name = "conflict_resolved_at")
-    val conflictResolvedAt: Date? = null
-)
+// Removed RegionalMetadata and ConflictMetadata - using flattened fields in entities
 
 /**
  * Conflict resolution strategies
@@ -309,7 +226,7 @@ interface BaseSyncableDao<T : SyncableEntity> {
     // Sync metadata updates
     suspend fun updateSyncStatus(id: String, status: SyncStatus, lastSyncTime: Date = Date())
     suspend fun updateConflictVersion(id: String, version: Long)
-    suspend fun markAsDeleted(id: String)
+    suspend fun markAsDeleted(id: String, deletedAt: Date = Date())
     suspend fun incrementRetryCount(id: String)
     suspend fun clearRetryCount(id: String)
     

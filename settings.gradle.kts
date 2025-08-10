@@ -24,7 +24,7 @@ include(":app")
 
 // Core modules
 include(":core:common")
-include(":core:data")
+// include(":core:data") // Temporarily disabled due to database dependencies
 include(":core:database")
 include(":core:network")
 include(":core:analytics")

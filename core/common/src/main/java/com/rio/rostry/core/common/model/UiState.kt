@@ -10,14 +10,7 @@ sealed class UiState {
     data class Error(val exception: Throwable, val message: String = exception.message ?: "Unknown error") : UiState()
 }
 
-/**
- * Sealed class for handling async operations with proper error handling
- */
-sealed class Result<out T> {
-    data class Success<T>(val data: T) : Result<T>()
-    data class Error(val exception: Throwable) : Result<Nothing>()
-    object Loading : Result<Nothing>()
-}
+// Result class moved to separate file to avoid duplication
 
 /**
  * User tier enumeration for permission-based access control
