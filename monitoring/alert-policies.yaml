@@ -1,0 +1,276 @@
+# 🚨 Production Monitoring Alert Policies for RIO Platform
+# Optimized for rural farmer platform with specific thresholds
+
+# High Priority Alerts
+- displayName: "RIO - High Crash Rate Alert"
+  documentation:
+    content: "Crash rate exceeded 0.5% in the last hour. Immediate investigation required."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "Crash rate > 0.5%"
+    conditionThreshold:
+      filter: 'resource.type="mobile_app" AND metric.type="firebase.com/firebase/crashlytics/crash_free_users_rate"'
+      comparison: COMPARISON_LESS_THAN
+      thresholdValue: 0.995  # 99.5% crash-free (0.5% crash rate)
+      duration: 3600s  # 1 hour
+      aggregations:
+      - alignmentPeriod: 300s
+        perSeriesAligner: ALIGN_MEAN
+        crossSeriesReducer: REDUCE_MEAN
+  alertStrategy:
+    autoClose: 86400s  # 24 hours
+  severity: CRITICAL
+  enabled: true
+
+- displayName: "RIO - High API Error Rate"
+  documentation:
+    content: "API error rate exceeded 5% in the last 15 minutes. Check Firebase Functions logs."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "API error rate > 5%"
+    conditionThreshold:
+      filter: 'resource.type="cloud_function" AND metric.type="cloudfunctions.googleapis.com/function/execution_count"'
+      comparison: COMPARISON_GREATER_THAN
+      thresholdValue: 0.05  # 5% error rate
+      duration: 900s  # 15 minutes
+      aggregations:
+      - alignmentPeriod: 60s
+        perSeriesAligner: ALIGN_RATE
+        crossSeriesReducer: REDUCE_SUM
+  severity: CRITICAL
+  enabled: true
+
+- displayName: "RIO - Payment Failure Rate High"
+  documentation:
+    content: "Payment failure rate exceeded 2% in the last hour. Check Razorpay integration."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "Payment failures > 2%"
+    conditionThreshold:
+      filter: 'resource.type="cloud_function" AND metric.type="custom.googleapis.com/payment/failure_rate"'
+      comparison: COMPARISON_GREATER_THAN
+      thresholdValue: 0.02  # 2% failure rate
+      duration: 3600s  # 1 hour
+      aggregations:
+      - alignmentPeriod: 300s
+        perSeriesAligner: ALIGN_MEAN
+        crossSeriesReducer: REDUCE_MEAN
+  severity: CRITICAL
+  enabled: true
+
+# Medium Priority Alerts
+- displayName: "RIO - High Response Time"
+  documentation:
+    content: "95th percentile response time exceeded 2 seconds. Performance degradation detected."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "Response time > 2s (95th percentile)"
+    conditionThreshold:
+      filter: 'resource.type="cloud_function" AND metric.type="cloudfunctions.googleapis.com/function/execution_times"'
+      comparison: COMPARISON_GREATER_THAN
+      thresholdValue: 2000  # 2 seconds in milliseconds
+      duration: 600s  # 10 minutes
+      aggregations:
+      - alignmentPeriod: 60s
+        perSeriesAligner: ALIGN_DELTA
+        crossSeriesReducer: REDUCE_PERCENTILE_95
+  severity: WARNING
+  enabled: true
+
+- displayName: "RIO - High Memory Usage"
+  documentation:
+    content: "Memory usage exceeded 80% for Firebase Functions. Consider scaling up."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "Memory usage > 80%"
+    conditionThreshold:
+      filter: 'resource.type="cloud_function" AND metric.type="cloudfunctions.googleapis.com/function/user_memory_bytes"'
+      comparison: COMPARISON_GREATER_THAN
+      thresholdValue: 0.8  # 80% of allocated memory
+      duration: 1800s  # 30 minutes
+      aggregations:
+      - alignmentPeriod: 300s
+        perSeriesAligner: ALIGN_MEAN
+        crossSeriesReducer: REDUCE_MEAN
+  severity: WARNING
+  enabled: true
+
+- displayName: "RIO - Low Offline Sync Success Rate"
+  documentation:
+    content: "Offline sync success rate below 90%. Rural connectivity issues detected."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "Sync success rate < 90%"
+    conditionThreshold:
+      filter: 'resource.type="mobile_app" AND metric.type="custom.googleapis.com/sync/success_rate"'
+      comparison: COMPARISON_LESS_THAN
+      thresholdValue: 0.9  # 90% success rate
+      duration: 1800s  # 30 minutes
+      aggregations:
+      - alignmentPeriod: 300s
+        perSeriesAligner: ALIGN_MEAN
+        crossSeriesReducer: REDUCE_MEAN
+  severity: WARNING
+  enabled: true
+
+# Rural-Specific Alerts
+- displayName: "RIO - High Data Usage Alert"
+  documentation:
+    content: "Data usage per user exceeded 10MB/day. Optimize for rural networks."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "Data usage > 10MB per user per day"
+    conditionThreshold:
+      filter: 'resource.type="mobile_app" AND metric.type="custom.googleapis.com/data_usage/bytes_per_user"'
+      comparison: COMPARISON_GREATER_THAN
+      thresholdValue: 10485760  # 10MB in bytes
+      duration: 86400s  # 24 hours
+      aggregations:
+      - alignmentPeriod: 3600s
+        perSeriesAligner: ALIGN_SUM
+        crossSeriesReducer: REDUCE_MEAN
+  severity: INFO
+  enabled: true
+
+- displayName: "RIO - Low Hindi/Telugu Usage"
+  documentation:
+    content: "Less than 60% users using Hindi/Telugu. Check localization effectiveness."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "Local language usage < 60%"
+    conditionThreshold:
+      filter: 'resource.type="mobile_app" AND metric.type="custom.googleapis.com/localization/local_language_usage"'
+      comparison: COMPARISON_LESS_THAN
+      thresholdValue: 0.6  # 60% local language usage
+      duration: 86400s  # 24 hours
+      aggregations:
+      - alignmentPeriod: 3600s
+        perSeriesAligner: ALIGN_MEAN
+        crossSeriesReducer: REDUCE_MEAN
+  severity: INFO
+  enabled: true
+
+# Business Metrics Alerts
+- displayName: "RIO - Low Daily Active Users"
+  documentation:
+    content: "Daily active users dropped below expected threshold. Check user engagement."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "DAU below threshold"
+    conditionThreshold:
+      filter: 'resource.type="mobile_app" AND metric.type="firebase.com/firebase/analytics/daily_active_users"'
+      comparison: COMPARISON_LESS_THAN
+      thresholdValue: 100  # Minimum 100 DAU for pilot
+      duration: 86400s  # 24 hours
+      aggregations:
+      - alignmentPeriod: 86400s
+        perSeriesAligner: ALIGN_MAX
+        crossSeriesReducer: REDUCE_SUM
+  severity: INFO
+  enabled: true
+
+- displayName: "RIO - Low Fowl Registration Rate"
+  documentation:
+    content: "Fowl registration rate below expected. Check user onboarding flow."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "Fowl registrations < 10 per day"
+    conditionThreshold:
+      filter: 'resource.type="mobile_app" AND metric.type="custom.googleapis.com/fowl/registrations_per_day"'
+      comparison: COMPARISON_LESS_THAN
+      thresholdValue: 10  # Minimum 10 fowl registrations per day
+      duration: 86400s  # 24 hours
+      aggregations:
+      - alignmentPeriod: 86400s
+        perSeriesAligner: ALIGN_SUM
+        crossSeriesReducer: REDUCE_SUM
+  severity: INFO
+  enabled: true
+
+# Infrastructure Alerts
+- displayName: "RIO - Firestore Read/Write Quota Near Limit"
+  documentation:
+    content: "Firestore operations approaching quota limits. Consider optimization."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "Firestore operations > 80% of quota"
+    conditionThreshold:
+      filter: 'resource.type="firestore_database" AND metric.type="firestore.googleapis.com/api/request_count"'
+      comparison: COMPARISON_GREATER_THAN
+      thresholdValue: 800000  # 80% of 1M daily quota
+      duration: 3600s  # 1 hour
+      aggregations:
+      - alignmentPeriod: 3600s
+        perSeriesAligner: ALIGN_SUM
+        crossSeriesReducer: REDUCE_SUM
+  severity: WARNING
+  enabled: true
+
+- displayName: "RIO - Storage Quota Near Limit"
+  documentation:
+    content: "Firebase Storage approaching quota limits. Consider cleanup or upgrade."
+    mimeType: "text/markdown"
+  conditions:
+  - displayName: "Storage usage > 80% of quota"
+    conditionThreshold:
+      filter: 'resource.type="gcs_bucket" AND metric.type="storage.googleapis.com/storage/total_bytes"'
+      comparison: COMPARISON_GREATER_THAN
+      thresholdValue: 4294967296  # 80% of 5GB (4GB in bytes)
+      duration: 3600s  # 1 hour
+      aggregations:
+      - alignmentPeriod: 3600s
+        perSeriesAligner: ALIGN_MEAN
+        crossSeriesReducer: REDUCE_SUM
+  severity: WARNING
+  enabled: true
+
+# Notification Channels
+notificationChannels:
+- displayName: "RIO Critical Alerts - SMS"
+  type: "sms"
+  labels:
+    number: "+91XXXXXXXXXX"  # Replace with actual number
+  enabled: true
+
+- displayName: "RIO Alerts - Email"
+  type: "email"
+  labels:
+    email_address: "alerts@rio-platform.com"  # Replace with actual email
+  enabled: true
+
+- displayName: "RIO Alerts - Slack"
+  type: "slack"
+  labels:
+    channel_name: "#rio-production-alerts"
+    url: "https://hooks.slack.com/services/XXX/YYY/ZZZ"  # Replace with actual webhook
+  enabled: true
+
+# Alert Policy Groups
+alertPolicyGroups:
+- displayName: "Critical Production Issues"
+  policies:
+  - "RIO - High Crash Rate Alert"
+  - "RIO - High API Error Rate"
+  - "RIO - Payment Failure Rate High"
+  notificationChannels:
+  - "RIO Critical Alerts - SMS"
+  - "RIO Alerts - Email"
+  - "RIO Alerts - Slack"
+
+- displayName: "Performance Warnings"
+  policies:
+  - "RIO - High Response Time"
+  - "RIO - High Memory Usage"
+  - "RIO - Low Offline Sync Success Rate"
+  notificationChannels:
+  - "RIO Alerts - Email"
+  - "RIO Alerts - Slack"
+
+- displayName: "Business Metrics"
+  policies:
+  - "RIO - Low Daily Active Users"
+  - "RIO - Low Fowl Registration Rate"
+  - "RIO - High Data Usage Alert"
+  - "RIO - Low Hindi/Telugu Usage"
+  notificationChannels:
+  - "RIO Alerts - Email"

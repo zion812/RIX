@@ -319,9 +319,9 @@ async function generateStorageReport(): Promise<any> {
     }
     
     // Categorize by storage class
-    if (storageClassDistribution[storageClass]) {
-      storageClassDistribution[storageClass].count++;
-      storageClassDistribution[storageClass].size += size;
+    if (storageClassDistribution[storageClass as keyof typeof storageClassDistribution]) {
+      storageClassDistribution[storageClass as keyof typeof storageClassDistribution].count++;
+      storageClassDistribution[storageClass as keyof typeof storageClassDistribution].size += size;
     }
   }
   

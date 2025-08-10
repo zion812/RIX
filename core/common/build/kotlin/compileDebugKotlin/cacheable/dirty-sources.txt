@@ -1,0 +1,12 @@
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\exceptions\SyncExceptions.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\ui\LoadingComponents.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\base\BaseViewModel.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\ui\LoadingStateManager.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\compression\DataCompressionManager.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\localization\LocalizationManager.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\performance\NetworkAwareManager.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\utils\DataValidator.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\di\CommonModule.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\performance\OfflineDataManager.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\model\UiState.kt
+C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\src\main\java\com\rio\rostry\core\common\base\BaseFragment.kt

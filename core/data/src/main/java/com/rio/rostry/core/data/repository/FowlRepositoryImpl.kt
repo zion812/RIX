@@ -1,6 +1,8 @@
 package com.rio.rostry.core.data.repository
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.rio.rostry.core.data.service.UserValidationService
+import com.rio.rostry.core.data.service.ValidationException
 import com.rio.rostry.core.database.RIOLocalDatabase
 import com.rio.rostry.core.database.entities.*
 import com.rio.rostry.core.database.mappers.toDomain
@@ -20,11 +22,12 @@ import javax.inject.Singleton
 @Singleton
 class FowlRepositoryImpl @Inject constructor(
     private val database: RIOLocalDatabase,
+    private val userValidationService: UserValidationService,
     firestore: FirebaseFirestore,
     networkStateManager: NetworkStateManager,
     dataValidator: DataValidator
 ) : BaseOfflineRepository<FowlEntity, Fowl>(firestore, networkStateManager, dataValidator) {
-    
+
     private val fowlDao = database.fowlDao()
     
     // Local database operations
@@ -122,6 +125,12 @@ class FowlRepositoryImpl @Inject constructor(
     
     override suspend fun saveServer(entity: FowlEntity): FowlEntity {
         return try {
+            // ✅ Validate user can own fowls before saving
+            val validationResult = userValidationService.validateCanOwnFowls(entity.ownerId)
+            if (!validationResult.isValid) {
+                throw ValidationException(validationResult)
+            }
+
             val fowlData = entity.toFirestoreMap()
             firestore.collection("fowls")
                 .document(entity.id)
@@ -129,7 +138,10 @@ class FowlRepositoryImpl @Inject constructor(
                 .await()
             entity
         } catch (e: Exception) {
-            throw SyncException.NetworkError.ServerError("Failed to save fowl to server", e)
+            when (e) {
+                is ValidationException -> throw e
+                else -> throw SyncException.NetworkError.ServerError("Failed to save fowl to server", e)
+            }
         }
     }
     
@@ -382,4 +394,42 @@ private fun FowlEntity.toFirestoreMap(): Map<String, Any> {
         "createdAt" to com.google.firebase.Timestamp(createdAt),
         "updatedAt" to com.google.firebase.Timestamp(updatedAt)
     )
+
+    // ✅ Additional methods to break circular dependencies
+
+    /**
+     * Get fowl count by owner - used by UserRepository without circular dependency
+     */
+    suspend fun getFowlCountByOwner(ownerId: String): Int {
+        return try {
+            fowlDao.getCountByOwner(ownerId)
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    /**
+     * Validate fowl ownership
+     */
+    suspend fun validateFowlOwnership(fowlId: String, userId: String): Boolean {
+        return try {
+            val fowl = fowlDao.getById(fowlId)
+            fowl?.ownerId == userId
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Get fowls by owner with validation
+     */
+    suspend fun getFowlsByOwnerValidated(ownerId: String): List<FowlEntity> {
+        // ✅ Validate user can own fowls
+        val validationResult = userValidationService.validateCanOwnFowls(ownerId)
+        if (!validationResult.isValid) {
+            throw ValidationException(validationResult)
+        }
+
+        return fowlDao.getByOwner(ownerId)
+    }
 }

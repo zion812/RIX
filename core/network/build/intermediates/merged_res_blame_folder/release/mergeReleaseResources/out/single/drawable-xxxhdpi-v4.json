@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.rio.rostry.core.network-release-53:/drawable-xxxhdpi-v4/ic_other_sign_in.png",
+        "source": "com.rio.rostry.core.network-credentials-1.2.0-rc01-24:/drawable-xxxhdpi-v4/ic_other_sign_in.png"
+    },
+    {
+        "merged": "com.rio.rostry.core.network-release-53:/drawable-xxxhdpi-v4/ic_password.png",
+        "source": "com.rio.rostry.core.network-credentials-1.2.0-rc01-24:/drawable-xxxhdpi-v4/ic_password.png"
+    },
+    {
+        "merged": "com.rio.rostry.core.network-release-53:/drawable-xxxhdpi-v4/ic_passkey.png",
+        "source": "com.rio.rostry.core.network-credentials-1.2.0-rc01-24:/drawable-xxxhdpi-v4/ic_passkey.png"
+    }
+]

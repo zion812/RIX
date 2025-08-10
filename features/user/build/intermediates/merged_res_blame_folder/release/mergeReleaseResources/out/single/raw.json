@@ -1,0 +1,6 @@
+[
+    {
+        "merged": "com.rio.rostry.features.user-release-68:/raw/firebase_common_keep.xml",
+        "source": "com.rio.rostry.features.user-firebase-common-21.0.0-8:/raw/firebase_common_keep.xml"
+    }
+]

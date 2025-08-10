@@ -1,5 +1,6 @@
 package com.rio.rostry.fowl.ui.viewmodels
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.rio.rostry.core.common.base.BaseViewModel
 import com.rio.rostry.core.common.model.*
@@ -22,7 +23,8 @@ class FowlManagementViewModel @Inject constructor(
     private val searchFowlsUseCase: SearchFowlsUseCase,
     private val uploadFowlPhotoUseCase: UploadFowlPhotoUseCase,
     private val generateQRCodeUseCase: GenerateQRCodeUseCase,
-    private val analyzeBreedUseCase: AnalyzeBreedUseCase
+    private val analyzeBreedUseCase: AnalyzeBreedUseCase,
+    private val savedStateHandle: SavedStateHandle
 ) : BaseViewModel() {
 
     // User's fowl list
@@ -33,9 +35,18 @@ class FowlManagementViewModel @Inject constructor(
     private val _selectedFowl = MutableStateFlow<Fowl?>(null)
     val selectedFowl: StateFlow<Fowl?> = _selectedFowl.asStateFlow()
 
-    // Fowl registration form state
-    private val _registrationState = MutableStateFlow(FowlRegistrationState())
+    // ✅ Fowl registration form state with persistence
+    private val _registrationState = MutableStateFlow(
+        savedStateHandle.get<FowlRegistrationState>("fowl_registration_state") ?: FowlRegistrationState()
+    )
     val registrationState: StateFlow<FowlRegistrationState> = _registrationState.asStateFlow()
+
+    // ✅ Persist fowl draft data across configuration changes
+    private val _fowlDraftData = savedStateHandle.getStateFlow(
+        key = "fowl_draft_data",
+        initialValue = FowlDraftData()
+    )
+    val fowlDraftData: StateFlow<FowlDraftData> = _fowlDraftData.asStateFlow()
 
     // Search state
     private val _searchState = MutableStateFlow(SearchState())
@@ -55,6 +66,35 @@ class FowlManagementViewModel @Inject constructor(
 
     init {
         loadUserFowls()
+        observeRegistrationStateChanges()
+    }
+
+    /**
+     * ✅ Observe registration state changes and persist them
+     */
+    private fun observeRegistrationStateChanges() {
+        viewModelScope.launch {
+            _registrationState.collect { state ->
+                savedStateHandle["fowl_registration_state"] = state
+            }
+        }
+    }
+
+    /**
+     * ✅ Update fowl draft data with automatic persistence
+     */
+    fun updateFowlDraft(update: (FowlDraftData) -> FowlDraftData) {
+        val currentDraft = fowlDraftData.value
+        val updatedDraft = update(currentDraft)
+        savedStateHandle["fowl_draft_data"] = updatedDraft
+    }
+
+    /**
+     * ✅ Clear draft data after successful fowl creation
+     */
+    fun clearFowlDraft() {
+        savedStateHandle.remove<FowlDraftData>("fowl_draft_data")
+        savedStateHandle.remove<FowlRegistrationState>("fowl_registration_state")
     }
 
     /**

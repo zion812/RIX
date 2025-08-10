@@ -202,7 +202,7 @@ export const blockSuspiciousUser = functions
  * Risk calculation functions
  */
 async function calculateRiskScore(params: any): Promise<any> {
-  const { userId, amount, paymentMethod, deviceInfo, userProfile, transactionHistory } = params;
+  const { amount, paymentMethod, deviceInfo, userProfile, transactionHistory } = params;
   
   let score = 0;
   const factors: string[] = [];

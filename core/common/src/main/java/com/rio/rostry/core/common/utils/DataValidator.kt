@@ -320,33 +320,17 @@ class DataValidator @Inject constructor() {
     }
     
     /**
-     * Validate user-specific fields
+     * Validate user tier
      */
-    private fun validateUserSpecificFields(user: UserEntity): Boolean {
-        // Additional user validation logic
-        return when (user.userTier) {
-            "FARMER" -> validateFarmerFields(user)
-            "ENTHUSIAST" -> validateEnthusiastFields(user)
-            else -> true
-        }
+    fun validateUserTier(userTier: String): Boolean {
+        return userTier in listOf("GENERAL", "FARMER", "ENTHUSIAST")
     }
-    
+
     /**
-     * Validate farmer-specific fields
+     * Validate verification status
      */
-    private fun validateFarmerFields(user: UserEntity): Boolean {
-        // Farmers should have farm information
-        return !user.farmName.isNullOrBlank() || user.verificationStatus != "VERIFIED"
-    }
-    
-    /**
-     * Validate enthusiast-specific fields
-     */
-    private fun validateEnthusiastFields(user: UserEntity): Boolean {
-        // Enthusiasts should have organization or credentials
-        return !user.organization.isNullOrBlank() || 
-                user.professionalCredentials.isNotEmpty() ||
-                user.verificationStatus != "VERIFIED"
+    fun validateVerificationStatus(status: String): Boolean {
+        return status in listOf("PENDING", "VERIFIED", "REJECTED")
     }
     
     /**

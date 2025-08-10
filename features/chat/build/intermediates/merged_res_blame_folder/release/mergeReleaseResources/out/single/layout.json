@@ -1,0 +1,30 @@
+[
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/layout/browser_actions_context_menu_row.xml",
+        "source": "com.rio.rostry.features.chat-browser-1.4.0-47:/layout/browser_actions_context_menu_row.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/layout/ime_base_split_test_activity.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/layout/ime_base_split_test_activity.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/layout/notification_template_part_time.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/layout/notification_template_part_time.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/layout/notification_template_part_chronometer.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/layout/notification_template_part_chronometer.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/layout/custom_dialog.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/layout/custom_dialog.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/layout/browser_actions_context_menu_page.xml",
+        "source": "com.rio.rostry.features.chat-browser-1.4.0-47:/layout/browser_actions_context_menu_page.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/layout/ime_secondary_split_test_activity.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/layout/ime_secondary_split_test_activity.xml"
+    }
+]

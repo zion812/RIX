@@ -1,0 +1,392 @@
+{
+  "displayName": "RIO Platform - Production Dashboard",
+  "mosaicLayout": {
+    "tiles": [
+      {
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "🚀 Platform Health Overview",
+          "scorecard": {
+            "timeSeriesQuery": {
+              "timeSeriesFilter": {
+                "filter": "resource.type=\"mobile_app\" AND metric.type=\"firebase.com/firebase/crashlytics/crash_free_users_rate\"",
+                "aggregation": {
+                  "alignmentPeriod": "300s",
+                  "perSeriesAligner": "ALIGN_MEAN",
+                  "crossSeriesReducer": "REDUCE_MEAN"
+                }
+              }
+            },
+            "sparkChartView": {
+              "sparkChartType": "SPARK_LINE"
+            },
+            "thresholds": [
+              {
+                "value": 0.995,
+                "color": "GREEN",
+                "direction": "ABOVE"
+              },
+              {
+                "value": 0.99,
+                "color": "YELLOW",
+                "direction": "ABOVE"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "width": 6,
+        "height": 4,
+        "xPos": 6,
+        "widget": {
+          "title": "👥 Active Users (Rural Focus)",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"mobile_app\" AND metric.type=\"firebase.com/firebase/analytics/daily_active_users\"",
+                    "aggregation": {
+                      "alignmentPeriod": "86400s",
+                      "perSeriesAligner": "ALIGN_MAX",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "targetAxis": "Y1"
+              }
+            ],
+            "timeshiftDuration": "0s",
+            "yAxis": {
+              "label": "Daily Active Users",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "yPos": 4,
+        "widget": {
+          "title": "🐓 Fowl Registrations",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"mobile_app\" AND metric.type=\"custom.googleapis.com/fowl/registrations_per_day\"",
+                    "aggregation": {
+                      "alignmentPeriod": "86400s",
+                      "perSeriesAligner": "ALIGN_SUM",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "plotType": "STACKED_BAR",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": {
+              "label": "Fowl Registrations",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "xPos": 4,
+        "yPos": 4,
+        "widget": {
+          "title": "🛒 Marketplace Activity",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"mobile_app\" AND metric.type=\"custom.googleapis.com/marketplace/listings_created\"",
+                    "aggregation": {
+                      "alignmentPeriod": "86400s",
+                      "perSeriesAligner": "ALIGN_SUM",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "targetAxis": "Y1"
+              },
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"mobile_app\" AND metric.type=\"custom.googleapis.com/marketplace/purchases_completed\"",
+                    "aggregation": {
+                      "alignmentPeriod": "86400s",
+                      "perSeriesAligner": "ALIGN_SUM",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": {
+              "label": "Marketplace Events",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "xPos": 8,
+        "yPos": 4,
+        "widget": {
+          "title": "💰 Payment Success Rate",
+          "scorecard": {
+            "timeSeriesQuery": {
+              "timeSeriesFilter": {
+                "filter": "resource.type=\"cloud_function\" AND metric.type=\"custom.googleapis.com/payment/success_rate\"",
+                "aggregation": {
+                  "alignmentPeriod": "3600s",
+                  "perSeriesAligner": "ALIGN_MEAN",
+                  "crossSeriesReducer": "REDUCE_MEAN"
+                }
+              }
+            },
+            "sparkChartView": {
+              "sparkChartType": "SPARK_BAR"
+            },
+            "thresholds": [
+              {
+                "value": 0.98,
+                "color": "GREEN",
+                "direction": "ABOVE"
+              },
+              {
+                "value": 0.95,
+                "color": "YELLOW",
+                "direction": "ABOVE"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "width": 6,
+        "height": 4,
+        "yPos": 8,
+        "widget": {
+          "title": "📱 App Performance Metrics",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"mobile_app\" AND metric.type=\"firebase.com/firebase/performance/app_start_time\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_PERCENTILE_95"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": {
+              "label": "App Start Time (ms)",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "width": 6,
+        "height": 4,
+        "xPos": 6,
+        "yPos": 8,
+        "widget": {
+          "title": "🌐 Network & Offline Usage",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"mobile_app\" AND metric.type=\"custom.googleapis.com/network/offline_usage_duration\"",
+                    "aggregation": {
+                      "alignmentPeriod": "3600s",
+                      "perSeriesAligner": "ALIGN_SUM",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "plotType": "STACKED_AREA",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": {
+              "label": "Offline Usage (hours)",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "yPos": 12,
+        "widget": {
+          "title": "🔄 Sync Success Rate",
+          "scorecard": {
+            "timeSeriesQuery": {
+              "timeSeriesFilter": {
+                "filter": "resource.type=\"mobile_app\" AND metric.type=\"custom.googleapis.com/sync/success_rate\"",
+                "aggregation": {
+                  "alignmentPeriod": "1800s",
+                  "perSeriesAligner": "ALIGN_MEAN",
+                  "crossSeriesReducer": "REDUCE_MEAN"
+                }
+              }
+            },
+            "sparkChartView": {
+              "sparkChartType": "SPARK_LINE"
+            },
+            "thresholds": [
+              {
+                "value": 0.95,
+                "color": "GREEN",
+                "direction": "ABOVE"
+              },
+              {
+                "value": 0.90,
+                "color": "YELLOW",
+                "direction": "ABOVE"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "xPos": 4,
+        "yPos": 12,
+        "widget": {
+          "title": "🌍 Language Usage (Rural)",
+          "pieChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"mobile_app\" AND metric.type=\"custom.googleapis.com/localization/language_usage\"",
+                    "aggregation": {
+                      "alignmentPeriod": "86400s",
+                      "perSeriesAligner": "ALIGN_SUM",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": ["metric.label.language"]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "width": 4,
+        "height": 4,
+        "xPos": 8,
+        "yPos": 12,
+        "widget": {
+          "title": "📊 Data Usage per User",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"mobile_app\" AND metric.type=\"custom.googleapis.com/data_usage/bytes_per_user\"",
+                    "aggregation": {
+                      "alignmentPeriod": "86400s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_MEAN"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "targetAxis": "Y1"
+              }
+            ],
+            "yAxis": {
+              "label": "Data Usage (MB)",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "width": 12,
+        "height": 4,
+        "yPos": 16,
+        "widget": {
+          "title": "🚨 Error Rate & Response Time",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_RATE",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": ["metric.label.status"]
+                    }
+                  }
+                },
+                "plotType": "STACKED_AREA",
+                "targetAxis": "Y1"
+              },
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_PERCENTILE_95"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "targetAxis": "Y2"
+              }
+            ],
+            "yAxis": {
+              "label": "Requests/sec",
+              "scale": "LINEAR"
+            },
+            "y2Axis": {
+              "label": "Response Time (ms)",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "dashboardFilters": [
+    {
+      "filterType": "RESOURCE_LABEL",
+      "labelKey": "project_id",
+      "stringValue": "rio-platform-prod"
+    }
+  ]
+}

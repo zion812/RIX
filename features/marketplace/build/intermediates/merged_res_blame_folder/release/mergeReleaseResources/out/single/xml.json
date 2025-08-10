@@ -1,0 +1,6 @@
+[
+    {
+        "merged": "com.rio.rostry.features.marketplace-release-68:/xml/image_share_filepaths.xml",
+        "source": "com.rio.rostry.features.marketplace-browser-1.4.0-49:/xml/image_share_filepaths.xml"
+    }
+]

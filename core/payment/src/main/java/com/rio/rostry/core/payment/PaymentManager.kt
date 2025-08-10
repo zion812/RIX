@@ -507,7 +507,7 @@ class PaymentManager @Inject constructor(
     private suspend fun getLocalTransactions(): List<CoinTransaction> {
         return try {
             val userId = auth.currentUser?.uid ?: return emptyList()
-            coinTransactionDao.getTransactionsByUser(userId).map { it.toDomain() }
+            coinTransactionDao.getTransactionsByUser(userId).map { it.toCoinTransaction() }
         } catch (e: Exception) {
             emptyList()
         }
@@ -539,6 +539,20 @@ class PaymentManager @Inject constructor(
             else -> SyncException.UnknownError(message ?: "Unknown error", this)
         }
     }
+}
+
+/**
+ * Extension functions for entity conversion
+ */
+fun CoinTransactionEntity.toCoinTransaction(): CoinTransaction {
+    return CoinTransaction(
+        id = this.id,
+        type = this.type,
+        amount = this.amount,
+        purpose = this.purpose,
+        createdAt = this.createdAt,
+        status = this.status
+    )
 }
 
 /**

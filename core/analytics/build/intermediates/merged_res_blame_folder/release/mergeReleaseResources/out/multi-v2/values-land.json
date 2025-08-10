@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.rio.rostry.core.analytics-release-55:/values-land/values-land.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\rowdy\\.gradle\\caches\\8.13\\transforms\\3beaa6500a3171ae61beb63a54b0aa10\\transformed\\appcompat-1.2.0\\res\\values-land\\values-land.xml",
+                    "from": {
+                        "startLines": "2,3,4",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,125,196",
+                        "endColumns": "69,70,67",
+                        "endOffsets": "120,191,259"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.rio.rostry.core.analytics-mergeReleaseResources-53:/values-land/values-land.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\rowdy\\.gradle\\caches\\8.13\\transforms\\3beaa6500a3171ae61beb63a54b0aa10\\transformed\\appcompat-1.2.0\\res\\values-land\\values-land.xml",
+                    "from": {
+                        "startLines": "2,3,4",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,125,196",
+                        "endColumns": "69,70,67",
+                        "endOffsets": "120,191,259"
+                    }
+                }
+            ]
+        }
+    ]
+}

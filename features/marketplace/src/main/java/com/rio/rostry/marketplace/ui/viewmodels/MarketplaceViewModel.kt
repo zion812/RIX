@@ -6,8 +6,8 @@ import com.rio.rostry.core.common.model.*
 import com.rio.rostry.marketplace.domain.model.*
 import com.rio.rostry.marketplace.domain.usecases.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -67,10 +67,25 @@ class MarketplaceViewModel @Inject constructor(
     private val _searchFacets = MutableStateFlow<SearchFacets?>(null)
     val searchFacets: StateFlow<SearchFacets?> = _searchFacets.asStateFlow()
 
+    // ✅ Job management for proper cleanup
+    private var marketplaceListingsJob: Job? = null
+    private var userListingsJob: Job? = null
+    private var watchlistJob: Job? = null
+    private var searchJob: Job? = null
+
     init {
         loadMarketplaceListings()
         loadUserListings()
         loadWatchlist()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // ✅ Cancel all active jobs to prevent memory leaks
+        marketplaceListingsJob?.cancel()
+        userListingsJob?.cancel()
+        watchlistJob?.cancel()
+        searchJob?.cancel()
     }
 
     /**
@@ -110,15 +125,23 @@ class MarketplaceViewModel @Inject constructor(
      * Search marketplace with criteria
      */
     fun searchMarketplace(criteria: MarketplaceSearchCriteria) {
+        // ✅ Cancel previous search job to prevent memory leaks
+        searchJob?.cancel()
+
         _searchState.value = _searchState.value.copy(
             isSearching = true,
             query = criteria.query ?: ""
         )
 
-        executeWithResult(
-            showLoading = false,
-            action = { searchMarketplaceUseCase(criteria, 0, DEFAULT_PAGE_SIZE) },
-            onSuccess = { result ->
+        searchJob = viewModelScope.launch {
+            try {
+                // ✅ Add debounce for search queries
+                if (!criteria.query.isNullOrBlank()) {
+                    delay(300) // Debounce search
+                }
+
+                val result = searchMarketplaceUseCase(criteria, 0, DEFAULT_PAGE_SIZE)
+
                 _marketplaceListings.value = ListState(
                     items = result.listings,
                     isLoading = false,
@@ -126,21 +149,23 @@ class MarketplaceViewModel @Inject constructor(
                 )
                 _searchState.value = _searchState.value.copy(isSearching = false)
                 _searchFacets.value = result.facets
-                
+
                 logUserAction("marketplace_searched", mapOf(
                     "query" to (criteria.query ?: ""),
                     "breed" to (criteria.breed ?: ""),
                     "region" to (criteria.region ?: ""),
                     "results" to result.listings.size
                 ))
-            },
-            onError = { exception ->
-                _searchState.value = _searchState.value.copy(isSearching = false)
-                _marketplaceListings.value = _marketplaceListings.value.copy(
-                    error = exception.message
-                )
+
+            } catch (e: Exception) {
+                if (e !is CancellationException) {
+                    _searchState.value = _searchState.value.copy(isSearching = false)
+                    _marketplaceListings.value = _marketplaceListings.value.copy(
+                        error = e.message
+                    )
+                }
             }
-        )
+        }
     }
 
     /**

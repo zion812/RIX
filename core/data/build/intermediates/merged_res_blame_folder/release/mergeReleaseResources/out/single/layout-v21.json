@@ -1,0 +1,18 @@
+[
+    {
+        "merged": "com.rio.rostry.core.data-release-57:/layout-v21/notification_template_custom_big.xml",
+        "source": "com.rio.rostry.core.data-core-1.16.0-3:/layout-v21/notification_template_custom_big.xml"
+    },
+    {
+        "merged": "com.rio.rostry.core.data-release-57:/layout-v21/notification_action.xml",
+        "source": "com.rio.rostry.core.data-core-1.16.0-3:/layout-v21/notification_action.xml"
+    },
+    {
+        "merged": "com.rio.rostry.core.data-release-57:/layout-v21/notification_template_icon_group.xml",
+        "source": "com.rio.rostry.core.data-core-1.16.0-3:/layout-v21/notification_template_icon_group.xml"
+    },
+    {
+        "merged": "com.rio.rostry.core.data-release-57:/layout-v21/notification_action_tombstone.xml",
+        "source": "com.rio.rostry.core.data-core-1.16.0-3:/layout-v21/notification_action_tombstone.xml"
+    }
+]

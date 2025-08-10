@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.rio.rostry.features.chat-mergeReleaseResources-64:/values-v30/values-v30.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\rowdy\\.gradle\\caches\\8.13\\transforms\\c88781b595a3b7a8171260127183483f\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "72",
+                        "endOffsets": "123"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.rio.rostry.features.chat-release-66:/values-v30/values-v30.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\rowdy\\.gradle\\caches\\8.13\\transforms\\c88781b595a3b7a8171260127183483f\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "72",
+                        "endOffsets": "123"
+                    }
+                }
+            ]
+        }
+    ]
+}

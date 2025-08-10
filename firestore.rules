@@ -1,0 +1,281 @@
+rules_version = '2';
+
+// Firestore Security Rules for RIO Coin-Based Payment System
+// Comprehensive security for payment transactions and user data
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for authentication and authorization
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserId() {
+      return request.auth.uid;
+    }
+
+    function getUserTier() {
+      return request.auth.token.tier;
+    }
+
+    // ✅ Enhanced tier checking functions
+    function isGeneralUser() {
+      return getUserTier() == 'general';
+    }
+
+    function isFarmerOrHigher() {
+      return getUserTier() in ['farmer', 'enthusiast'];
+    }
+
+    function isOwner(userId) {
+      return getUserId() == userId;
+    }
+
+    function isAdmin() {
+      return getUserTier() == 'ADMIN';
+    }
+
+    function isModerator() {
+      return getUserTier() == 'MODERATOR';
+    }
+
+    function isAdminOrModerator() {
+      return isAdmin() || isModerator();
+    }
+
+    function isFarmer() {
+      return getUserTier() == 'FARMER';
+    }
+
+    function isEnthusiast() {
+      return getUserTier() == 'ENTHUSIAST';
+    }
+
+    function isVerified() {
+      return request.auth.token.verified == true;
+    }
+
+    // User profiles - users can read/write their own data
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdminOrModerator());
+      allow write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Coin transactions - strict access control
+    match /coin_transactions/{transactionId} {
+      allow read: if isAuthenticated() && 
+                  (isOwner(resource.data.userId) || isAdminOrModerator());
+      allow create: if false; // Only Cloud Functions can create transactions
+      allow update: if false; // Transactions are immutable
+      allow delete: if false; // Transactions cannot be deleted
+    }
+
+    // Coin orders - user can read their own orders
+    match /coin_orders/{orderId} {
+      allow read: if isAuthenticated() && 
+                  (isOwner(resource.data.userId) || isAdminOrModerator());
+      allow create: if false; // Only Cloud Functions can create orders
+      allow update: if false; // Orders are immutable after creation
+      allow delete: if false; // Orders cannot be deleted
+    }
+
+    // User coin balances - read-only for users
+    match /user_coin_balances/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdminOrModerator());
+      allow write: if false; // Only Cloud Functions can modify balances
+    }
+
+    // Coin packages - public read, admin write
+    match /coin_packages/{packageId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isAdmin();
+    }
+
+    // Refund requests - users can read/create their own
+    match /refund_requests/{refundId} {
+      allow read: if isAuthenticated() && 
+                  (isOwner(resource.data.userId) || isAdminOrModerator());
+      allow create: if isAuthenticated() && 
+                    isOwner(request.resource.data.userId) &&
+                    request.resource.data.keys().hasAll(['userId', 'orderId', 'reason']);
+      allow update: if isAuthenticated() && isAdminOrModerator();
+      allow delete: if false; // Refund requests cannot be deleted
+    }
+
+    // Disputes - participants and moderators can access
+    match /disputes/{disputeId} {
+      allow read: if isAuthenticated() && 
+                  (isOwner(resource.data.disputantId) || 
+                   isOwner(resource.data.respondentId) ||
+                   isAdminOrModerator());
+      allow create: if isAuthenticated() && 
+                    isOwner(request.resource.data.disputantId) &&
+                    request.resource.data.keys().hasAll(['disputantId', 'respondentId', 'transactionId', 'reason']);
+      allow update: if isAuthenticated() && 
+                    (isAdminOrModerator() || 
+                     (isOwner(resource.data.respondentId) && 
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['response', 'updatedAt'])));
+      allow delete: if false; // Disputes cannot be deleted
+    }
+
+    // Fraud checks - admin only
+    match /fraud_checks/{checkId} {
+      allow read: if isAuthenticated() && isAdminOrModerator();
+      allow write: if false; // Only Cloud Functions can create fraud checks
+    }
+
+    // Suspicious activities - admin only
+    match /suspicious_activities/{activityId} {
+      allow read: if isAuthenticated() && isAdminOrModerator();
+      allow write: if false; // Only Cloud Functions can create suspicious activity records
+    }
+
+    // Demo orders - for testing only
+    match /demo_orders/{orderId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow write: if false; // Only Cloud Functions can manage demo orders
+    }
+
+    // Demo webhooks - for testing only
+    match /demo_webhooks/{webhookId} {
+      allow read: if isAuthenticated() && isAdminOrModerator();
+      allow write: if false; // Only Cloud Functions can create webhook records
+    }
+
+    // Demo transaction logs - for testing only
+    match /demo_transaction_logs/{logId} {
+      allow read: if isAuthenticated() && isAdminOrModerator();
+      allow write: if false; // Only Cloud Functions can create logs
+    }
+
+    // Demo analytics - for testing only
+    match /demo_analytics/{analyticsId} {
+      allow read: if isAuthenticated() && isAdminOrModerator();
+      allow write: if false; // Only Cloud Functions can create analytics
+    }
+
+    // Payment analytics - admin only
+    match /payment_analytics/{analyticsId} {
+      allow read: if isAuthenticated() && isAdminOrModerator();
+      allow write: if false; // Only Cloud Functions can create analytics
+    }
+
+    // System configuration - admin only
+    match /system_config/{configId} {
+      allow read: if isAuthenticated() && isAdminOrModerator();
+      allow write: if isAuthenticated() && isAdmin();
+    }
+
+    // Audit logs - admin only
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated() && isAdminOrModerator();
+      allow write: if false; // Only Cloud Functions can create audit logs
+    }
+
+    // ✅ Fowl listings - tier-based restrictions
+    match /fowls/{fowlId} {
+      allow read: if isAuthenticated();
+
+      // Only farmers and enthusiasts can create fowls
+      allow create: if isAuthenticated() &&
+                   isFarmerOrHigher() &&
+                   isOwner(request.resource.data.ownerId) &&
+                   validateFowlCreation();
+
+      allow update: if isAuthenticated() &&
+                   isOwner(resource.data.ownerId) &&
+                   isFarmerOrHigher() &&
+                   validateFowlUpdate();
+
+      allow delete: if isAuthenticated() &&
+                   (isOwner(resource.data.ownerId) || isAdminOrModerator()) &&
+                   isFarmerOrHigher();
+    }
+
+    // ✅ Marketplace listings - tier-based feature restrictions
+    match /marketplace/{listingId} {
+      allow read: if isAuthenticated();
+
+      // Basic listings for farmers, advanced for enthusiasts
+      allow create: if isAuthenticated() &&
+                   isFarmerOrHigher() &&
+                   isOwner(request.resource.data.sellerId) &&
+                   validateMarketplaceListing();
+
+      allow update: if isAuthenticated() &&
+                   isOwner(resource.data.sellerId) &&
+                   validateMarketplaceUpdate();
+
+      allow delete: if isAuthenticated() &&
+                   (isOwner(resource.data.sellerId) || isAdminOrModerator());
+    }
+
+    // Messages - existing rules
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() && 
+                  (isOwner(resource.data.senderId) || 
+                   isOwner(resource.data.recipientId) ||
+                   isAdminOrModerator());
+      allow create: if isAuthenticated() && 
+                    isOwner(request.resource.data.senderId) &&
+                    request.resource.data.senderId != request.resource.data.recipientId;
+      allow update: if false; // Messages are immutable
+      allow delete: if false; // Messages cannot be deleted
+    }
+
+    // Notifications - users can read their own
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && 
+                  (isOwner(resource.data.userId) || isAdminOrModerator());
+      allow write: if false; // Only Cloud Functions can create notifications
+    }
+
+    // ✅ Validation functions
+
+    function validateFowlCreation() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['name', 'breed', 'ownerId', 'createdAt']) &&
+             data.name is string &&
+             data.name.size() > 0 &&
+             data.breed is string &&
+             data.breed.size() > 0;
+    }
+
+    function validateFowlUpdate() {
+      let data = request.resource.data;
+      // Cannot change ownership through update
+      return !data.diff(resource.data).affectedKeys().hasAny(['ownerId']);
+    }
+
+    function validateMarketplaceListing() {
+      let data = request.resource.data;
+      let tier = getUserTier();
+
+      // Basic validation
+      if (!data.keys().hasAll(['title', 'sellerId', 'priceInCoins', 'fowlId'])) {
+        return false;
+      }
+
+      // Tier-based feature validation
+      if (tier == 'farmer') {
+        // Farmers cannot use premium features
+        return !data.keys().hasAny(['premiumFeatures', 'advancedAnalytics', 'priorityListing']);
+      }
+
+      // Enthusiasts can use all features
+      return true;
+    }
+
+    function validateMarketplaceUpdate() {
+      let data = request.resource.data;
+      // Cannot change seller or fowl
+      return !data.diff(resource.data).affectedKeys().hasAny(['sellerId', 'fowlId']);
+    }
+
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

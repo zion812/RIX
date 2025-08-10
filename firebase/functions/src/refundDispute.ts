@@ -209,7 +209,7 @@ export const processAutomaticRefunds = functions
           // Mark as failed and queue for manual review
           await refundDoc.ref.update({
             status: 'FAILED',
-            failureReason: error.message,
+            failureReason: error instanceof Error ? error.message : 'Unknown error',
             requiresManualReview: true,
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
           });
@@ -435,7 +435,7 @@ async function processAutomaticRefund(refundRequestId: string, refundData: any):
     await sendRefundConfirmation(refundData.userId, refundData, refund.id);
 
   } catch (error) {
-    throw new Error(`Automatic refund processing failed: ${error.message}`);
+    throw new Error(`Automatic refund processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

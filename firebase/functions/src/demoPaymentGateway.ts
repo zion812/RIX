@@ -99,7 +99,6 @@ export const processDemoPayment = functions
     }
 
     const { orderId, paymentMethod, simulateFailure, customDelay } = data;
-    const userId = context.auth.uid;
 
     try {
       // Get order details
@@ -110,7 +109,7 @@ export const processDemoPayment = functions
 
       const orderData = orderDoc.data()!;
       
-      if (orderData.userId !== userId) {
+      if (orderData.userId !== context.auth.uid) {
         throw new functions.https.HttpsError('permission-denied', 'Order does not belong to user');
       }
 
@@ -163,7 +162,6 @@ export const processDemoUPIPayment = functions
     }
 
     const { orderId, upiId, pin } = data;
-    const userId = context.auth.uid;
 
     try {
       // Validate UPI ID format
@@ -263,7 +261,6 @@ export const processDemoGooglePay = functions
     }
 
     const { orderId, paymentToken } = data;
-    const userId = context.auth.uid;
 
     try {
       // Simulate Google Pay token validation

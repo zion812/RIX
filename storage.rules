@@ -1,0 +1,169 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for RIO Payment System
+// Optimized for payment receipts, documents, and user verification
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions for user authentication and authorization
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserId() {
+      return request.auth.uid;
+    }
+    
+    function getUserTier() {
+      return request.auth.token.userTier;
+    }
+    
+    function isOwner(userId) {
+      return getUserId() == userId;
+    }
+    
+    function isAdminOrModerator() {
+      return getUserTier() in ['ADMIN', 'MODERATOR'];
+    }
+    
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidDocumentType() {
+      return request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('application/msword') ||
+             request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    }
+    
+    function isWithinSizeLimit(maxSize) {
+      return request.resource.size <= maxSize;
+    }
+    
+    function isWithinRateLimit() {
+      // Implement rate limiting logic
+      return true; // Placeholder
+    }
+    
+    // Payment receipts and documents
+    match /users/{userId}/payments/{paymentId}/{allPaths=**} {
+      // Read access: Owner and admins only
+      allow read: if isAuthenticated() && 
+                  (isOwner(userId) || isAdminOrModerator());
+      
+      // Write access: Owner only with proper file type and size
+      allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
+                   ((isValidImageType() && isWithinSizeLimit(5 * 1024 * 1024)) ||  // 5MB for images
+                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024))); // 10MB for documents
+    }
+    
+    // Verification documents for tier upgrades
+    match /users/{userId}/verification/{allPaths=**} {
+      // Read access: Owner and admins only
+      allow read: if isAuthenticated() && 
+                  (isOwner(userId) || isAdminOrModerator());
+      
+      // Write access: Owner only with proper file type and size
+      allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
+                   ((isValidImageType() && isWithinSizeLimit(5 * 1024 * 1024)) ||
+                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024)));
+    }
+    
+    // Dispute evidence files
+    match /disputes/{disputeId}/evidence/{allPaths=**} {
+      // Read access: Dispute participants and admins
+      allow read: if isAuthenticated() && 
+                  (isDisputeParticipant(disputeId) || isAdminOrModerator());
+      
+      // Write access: Dispute participants only
+      allow write: if isAuthenticated() && isDisputeParticipant(disputeId) && isWithinRateLimit() &&
+                   ((isValidImageType() && isWithinSizeLimit(5 * 1024 * 1024)) ||
+                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024)));
+    }
+    
+    // Refund supporting documents
+    match /refunds/{refundId}/documents/{allPaths=**} {
+      // Read access: Refund requester and admins
+      allow read: if isAuthenticated() && 
+                  (isRefundRequester(refundId) || isAdminOrModerator());
+      
+      // Write access: Refund requester only
+      allow write: if isAuthenticated() && isRefundRequester(refundId) && isWithinRateLimit() &&
+                   ((isValidImageType() && isWithinSizeLimit(5 * 1024 * 1024)) ||
+                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024)));
+    }
+    
+    // User profile images
+    match /users/{userId}/profile/{allPaths=**} {
+      // Read access: All authenticated users (for public profiles)
+      allow read: if isAuthenticated();
+      
+      // Write access: Owner only with image type and size limits
+      allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
+                   isValidImageType() && isWithinSizeLimit(2 * 1024 * 1024); // 2MB for profile images
+    }
+    
+    // Fowl images (existing marketplace functionality)
+    match /users/{userId}/fowls/{fowlId}/{allPaths=**} {
+      // Read access: All authenticated users (for marketplace)
+      allow read: if isAuthenticated();
+      
+      // Write access: Owner only with proper file type and size
+      allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
+                   isValidImageType() && isWithinSizeLimit(5 * 1024 * 1024); // 5MB for fowl images
+    }
+    
+    // System files and backups - admin only
+    match /system/{allPaths=**} {
+      allow read, write: if isAuthenticated() && isAdminOrModerator();
+    }
+    
+    // Temporary upload area - for chunked uploads
+    match /temp/uploads/{sessionId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && 
+                         isOwner(getSessionOwner(sessionId)) &&
+                         isWithinRateLimit() &&
+                         isWithinSizeLimit(100 * 1024 * 1024); // 100MB temp limit
+    }
+    
+    // Demo payment receipts and test files
+    match /demo/{allPaths=**} {
+      // Read access: All authenticated users for demo purposes
+      allow read: if isAuthenticated();
+      
+      // Write access: All authenticated users with size limits
+      allow write: if isAuthenticated() && isWithinRateLimit() &&
+                   isWithinSizeLimit(10 * 1024 * 1024); // 10MB for demo files
+    }
+    
+    // Analytics and reports - admin only
+    match /reports/{allPaths=**} {
+      allow read: if isAuthenticated() && isAdminOrModerator();
+      allow write: if false; // Only Cloud Functions can generate reports
+    }
+    
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// Helper functions that would be implemented with Firestore lookups
+// These are placeholders for the actual implementation
+
+function isDisputeParticipant(disputeId) {
+  // Would check Firestore disputes collection to verify user is participant
+  return true; // Placeholder
+}
+
+function isRefundRequester(refundId) {
+  // Would check Firestore refund_requests collection to verify user is requester
+  return true; // Placeholder
+}
+
+function getSessionOwner(sessionId) {
+  // Would extract user ID from session ID or check session collection
+  return request.auth.uid; // Placeholder
+}

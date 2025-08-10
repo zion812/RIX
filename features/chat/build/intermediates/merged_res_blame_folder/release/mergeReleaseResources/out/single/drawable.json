@@ -1,0 +1,98 @@
+[
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_icon_dark_normal.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_dark_normal.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/ic_call_decline_low.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/drawable/ic_call_decline_low.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_icon_light_focused.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_light_focused.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_icon_light.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_light.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_text_dark.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_dark.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/ic_call_answer_low.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/drawable/ic_call_answer_low.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/notification_tile_bg.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/drawable/notification_tile_bg.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/notification_bg_low.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/drawable/notification_bg_low.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_icon_disabled.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_disabled.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/ic_call_answer.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/drawable/ic_call_answer.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_text_dark_normal.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_dark_normal.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_text_light.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_light.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_text_light_normal.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_light_normal.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/notification_bg.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/drawable/notification_bg.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_text_dark_focused.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_dark_focused.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/ic_call_answer_video.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/drawable/ic_call_answer_video.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/ic_call_answer_video_low.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/drawable/ic_call_answer_video_low.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_icon_dark.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_dark.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_text_light_focused.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_light_focused.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/ic_call_decline.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/drawable/ic_call_decline.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_icon_light_normal.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_light_normal.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/notification_icon_background.xml",
+        "source": "com.rio.rostry.features.chat-core-1.16.0-3:/drawable/notification_icon_background.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_text_disabled.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_disabled.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable/common_google_signin_btn_icon_dark_focused.xml",
+        "source": "com.rio.rostry.features.chat-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_dark_focused.xml"
+    }
+]

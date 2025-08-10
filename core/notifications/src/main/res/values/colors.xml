@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification colors -->
+    <color name="notification_color">#FF6B35</color>
+    <color name="marketplace_color">#4CAF50</color>
+    <color name="transfer_color">#2196F3</color>
+    <color name="communication_color">#9C27B0</color>
+    <color name="breeding_color">#FF9800</color>
+    <color name="payment_color">#FF6B35</color>
+    <color name="system_color">#607D8B</color>
+</resources>

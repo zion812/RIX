@@ -1,0 +1,6 @@
+[
+    {
+        "merged": "com.rio.rostry.core.analytics-release-55:/xml/ga_ad_services_config.xml",
+        "source": "com.rio.rostry.core.analytics-play-services-measurement-api-22.1.2-26:/xml/ga_ad_services_config.xml"
+    }
+]

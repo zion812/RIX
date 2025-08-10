@@ -185,7 +185,7 @@ export const verifyPaymentAndCreditCoins = functions
       
       // Update order status on error
       if (orderId) {
-        await updateOrderStatus(orderId, 'FAILED', error.message);
+        await updateOrderStatus(orderId, 'FAILED', error instanceof Error ? error.message : 'Unknown error');
       }
       
       if (error instanceof functions.https.HttpsError) {

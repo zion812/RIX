@@ -43,6 +43,19 @@ android {
 }
 
 dependencies {
+    // Core modules
+    implementation(project(":core:common"))
+    implementation(project(":core:data"))
+    implementation(project(":core:database"))
+    implementation(project(":core:network"))
+    implementation(project(":core:analytics"))
+
+    // Feature modules
+    implementation(project(":features:fowl"))
+    implementation(project(":features:marketplace"))
+    implementation(project(":features:familytree"))
+    implementation(project(":features:chat"))
+    implementation(project(":features:user"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

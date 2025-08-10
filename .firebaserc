@@ -1,0 +1,21 @@
+{
+  "projects": {
+    "default": "rio-payment-system",
+    "development": "rio-payment-dev",
+    "staging": "rio-payment-staging",
+    "production": "rio-payment-prod"
+  },
+  "targets": {
+    "rio-payment-system": {
+      "hosting": {
+        "web": ["rio-web-app"],
+        "admin": ["rio-admin-panel"]
+      },
+      "storage": {
+        "default": ["rio-storage-bucket"]
+      }
+    }
+  },
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
+}

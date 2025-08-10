@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable-anydpi-v21/ic_password.xml",
+        "source": "com.rio.rostry.features.chat-credentials-1.2.0-rc01-26:/drawable-anydpi-v21/ic_password.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.chat-release-66:/drawable-anydpi-v21/ic_other_sign_in.xml",
+        "source": "com.rio.rostry.features.chat-credentials-1.2.0-rc01-26:/drawable-anydpi-v21/ic_other_sign_in.xml"
+    }
+]

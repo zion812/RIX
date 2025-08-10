@@ -242,7 +242,8 @@ export function validateDemoPaymentRequest(amount: number, method: string): {
   }
   
   // Payment method validation
-  if (!DEMO_CONFIG.FEATURES[`enable${method.charAt(0).toUpperCase() + method.slice(1).toLowerCase()}`]) {
+  const featureKey = `enable${method.charAt(0).toUpperCase() + method.slice(1).toLowerCase()}` as keyof typeof DEMO_CONFIG.FEATURES;
+  if (!DEMO_CONFIG.FEATURES[featureKey]) {
     return {
       valid: false,
       error: `Payment method ${method} is not enabled in demo`

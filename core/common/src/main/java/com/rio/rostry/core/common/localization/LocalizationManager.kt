@@ -34,6 +34,43 @@ class LocalizationManager @Inject constructor(
     }
 
     /**
+     * ✅ Get localized string for rural context with simplified language
+     */
+    fun getRuralString(key: String, vararg args: Any): String {
+        // Try rural-specific key first for simplified language
+        val ruralKey = "${key}_rural"
+        val ruralTranslation = getLocalizedString(ruralKey)
+
+        return if (ruralTranslation != ruralKey) {
+            if (args.isNotEmpty()) {
+                String.format(ruralTranslation, *args)
+            } else {
+                ruralTranslation
+            }
+        } else {
+            getLocalizedString(key, *args)
+        }
+    }
+
+    /**
+     * ✅ Check if current language is right-to-left
+     */
+    fun isRTL(): Boolean {
+        return when (currentLanguage) {
+            Language.URDU -> true
+            else -> false
+        }
+    }
+
+    /**
+     * ✅ Get farming-specific terminology
+     */
+    fun getFarmingTerm(termKey: String): String {
+        val farmingKey = "farming_${termKey}"
+        return getLocalizedString(farmingKey)
+    }
+
+    /**
      * Update application locale
      */
     private fun updateAppLocale(language: Language) {

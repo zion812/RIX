@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.rio.rostry.features.user-release-68:/drawable-watch-v20/common_google_signin_btn_text_dark_normal.xml",
+        "source": "com.rio.rostry.features.user-play-services-auth-20.7.0-2:/drawable-watch-v20/common_google_signin_btn_text_dark_normal.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.user-release-68:/drawable-watch-v20/common_google_signin_btn_text_light_normal.xml",
+        "source": "com.rio.rostry.features.user-play-services-auth-20.7.0-2:/drawable-watch-v20/common_google_signin_btn_text_light_normal.xml"
+    },
+    {
+        "merged": "com.rio.rostry.features.user-release-68:/drawable-watch-v20/common_google_signin_btn_text_disabled.xml",
+        "source": "com.rio.rostry.features.user-play-services-auth-20.7.0-2:/drawable-watch-v20/common_google_signin_btn_text_disabled.xml"
+    }
+]

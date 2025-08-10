@@ -1,5 +1,9 @@
 package com.rio.rostry.core.data.repository
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import com.rio.rostry.core.database.RIOLocalDatabase
 import com.rio.rostry.core.database.entities.MediaEntity
 import com.rio.rostry.core.media.MediaManager
@@ -9,29 +13,42 @@ import com.rio.rostry.core.media.MediaQuality
 import com.rio.rostry.core.network.NetworkStateManager
 import com.rio.rostry.core.common.exceptions.SyncException
 import com.rio.rostry.shared.domain.model.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
-import android.net.Uri
+import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Media repository implementation with offline-first capabilities
+ * ✅ Enhanced media repository with compression and rural optimization
  * Integrates with existing sync system and optimizes for rural networks
  */
 @Singleton
 class MediaRepositoryImpl @Inject constructor(
     private val database: RIOLocalDatabase,
     private val mediaManager: MediaManager,
-    private val networkStateManager: NetworkStateManager
+    private val networkStateManager: NetworkStateManager,
+    private val context: Context
 ) {
-    
+
     private val mediaDao = database.mediaDao()
+
+    // ✅ Media optimization configuration
+    private val compressionQuality = 80
+    private val maxImageSize = 1024 // 1024x1024 max for rural networks
+    private val thumbnailSize = 256 // 256x256 thumbnails
+    private val maxVideoSize = 50 * 1024 * 1024 // 50MB max
+
+    // ✅ Progressive loading cache
+    private val thumbnailCache = mutableMapOf<String, String>()
+    private val compressionCache = mutableMapOf<String, ByteArray>()
     
     /**
-     * Upload media with offline-first approach
+     * ✅ Upload media with compression and offline-first approach
      */
     suspend fun uploadMedia(
         localUri: Uri,
@@ -40,22 +57,39 @@ class MediaRepositoryImpl @Inject constructor(
         mediaType: MediaType,
         purpose: MediaPurpose = MediaPurpose.GENERAL
     ): Flow<MediaUploadProgress> = flow {
-        
+
         emit(MediaUploadProgress.Started("Preparing upload..."))
-        
+
         try {
+            // ✅ Step 1: Compress media for rural networks
+            emit(MediaUploadProgress.Compressing(0.1f, "Compressing media..."))
+            val compressedMedia = compressMedia(localUri, mediaType)
+
+            // ✅ Step 2: Create thumbnail for progressive loading
+            emit(MediaUploadProgress.Compressing(0.3f, "Creating thumbnail..."))
+            val thumbnail = createThumbnail(localUri, mediaType)
+
+            // ✅ Step 3: Save locally first (offline-first)
+            emit(MediaUploadProgress.Compressing(0.5f, "Saving locally..."))
+            val localMedia = saveMediaLocally(compressedMedia, thumbnail, entityType, entityId, mediaType)
+
             // Check if we're online
             val isOnline = networkStateManager.isConnected.first()
-            
+
             if (isOnline) {
-                // Upload immediately with progress tracking
-                mediaManager.uploadMedia(localUri, mediaType, entityType, entityId, purpose)
+                // ✅ Upload compressed media with progress tracking
+                emit(MediaUploadProgress.Uploading(0.6f, "Uploading compressed media..."))
+
+                mediaManager.uploadMedia(localMedia.compressedUri, mediaType, entityType, entityId, purpose)
                     .collect { result ->
                         when (result) {
                             is com.rio.rostry.core.media.MediaUploadResult.Progress -> {
-                                emit(MediaUploadProgress.Uploading(result.percentage, result.message))
+                                val adjustedProgress = 0.6f + (result.percentage * 0.4f)
+                                emit(MediaUploadProgress.Uploading(adjustedProgress, result.message))
                             }
                             is com.rio.rostry.core.media.MediaUploadResult.Success -> {
+                                // ✅ Upload thumbnail separately
+                                uploadThumbnail(localMedia.thumbnailUri, result.mediaId)
                                 emit(MediaUploadProgress.Completed(result.mediaId, result.remoteUrl))
                             }
                             is com.rio.rostry.core.media.MediaUploadResult.QueuedForUpload -> {
@@ -446,4 +480,247 @@ private fun Exception.toSyncException(): SyncException {
         is SyncException -> this
         else -> SyncException.UnknownError(message ?: "Unknown error", this)
     }
+
+    /**
+     * ✅ Compress media based on type and rural network optimization
+     */
+    private suspend fun compressMedia(uri: Uri, mediaType: MediaType): CompressedMediaData {
+        return when (mediaType) {
+            MediaType.IMAGE -> compressImage(uri)
+            MediaType.VIDEO -> compressVideo(uri)
+            else -> CompressedMediaData(uri, uri.toString().toByteArray())
+        }
+    }
+
+    /**
+     * ✅ Compress image with optimal settings for rural networks
+     */
+    private suspend fun compressImage(uri: Uri): CompressedMediaData = withContext(Dispatchers.IO) {
+        try {
+            val inputStream = context.contentResolver.openInputStream(uri)
+            val originalBitmap = BitmapFactory.decodeStream(inputStream)
+
+            // ✅ Calculate optimal size maintaining aspect ratio
+            val (newWidth, newHeight) = calculateOptimalSize(
+                originalBitmap.width,
+                originalBitmap.height,
+                maxImageSize
+            )
+
+            // ✅ Resize bitmap
+            val resizedBitmap = Bitmap.createScaledBitmap(
+                originalBitmap,
+                newWidth,
+                newHeight,
+                true
+            )
+
+            // ✅ Compress to JPEG with quality optimization
+            val outputStream = ByteArrayOutputStream()
+            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, compressionQuality, outputStream)
+
+            // ✅ Save compressed image to local file
+            val compressedFile = File(context.cacheDir, "compressed_${System.currentTimeMillis()}.jpg")
+            compressedFile.writeBytes(outputStream.toByteArray())
+
+            // ✅ Clean up
+            originalBitmap.recycle()
+            resizedBitmap.recycle()
+
+            CompressedMediaData(
+                uri = Uri.fromFile(compressedFile),
+                data = outputStream.toByteArray()
+            )
+
+        } catch (e: Exception) {
+            throw MediaCompressionException("Failed to compress image", e)
+        }
+    }
+
+    /**
+     * ✅ Create thumbnail for progressive loading
+     */
+    private suspend fun createThumbnail(uri: Uri, mediaType: MediaType): ThumbnailData = withContext(Dispatchers.IO) {
+        when (mediaType) {
+            MediaType.IMAGE -> createImageThumbnail(uri)
+            MediaType.VIDEO -> createVideoThumbnail(uri)
+            else -> ThumbnailData(uri, byteArrayOf())
+        }
+    }
+
+    /**
+     * ✅ Create image thumbnail
+     */
+    private suspend fun createImageThumbnail(uri: Uri): ThumbnailData {
+        try {
+            val inputStream = context.contentResolver.openInputStream(uri)
+            val originalBitmap = BitmapFactory.decodeStream(inputStream)
+
+            // ✅ Create square thumbnail
+            val size = minOf(originalBitmap.width, originalBitmap.height)
+            val x = (originalBitmap.width - size) / 2
+            val y = (originalBitmap.height - size) / 2
+
+            val squareBitmap = Bitmap.createBitmap(originalBitmap, x, y, size, size)
+            val thumbnailBitmap = Bitmap.createScaledBitmap(
+                squareBitmap,
+                thumbnailSize,
+                thumbnailSize,
+                true
+            )
+
+            val outputStream = ByteArrayOutputStream()
+            thumbnailBitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+
+            // Save thumbnail to local file
+            val thumbnailFile = File(context.cacheDir, "thumb_${System.currentTimeMillis()}.jpg")
+            thumbnailFile.writeBytes(outputStream.toByteArray())
+
+            // Clean up
+            originalBitmap.recycle()
+            squareBitmap.recycle()
+            thumbnailBitmap.recycle()
+
+            ThumbnailData(
+                uri = Uri.fromFile(thumbnailFile),
+                data = outputStream.toByteArray()
+            )
+
+        } catch (e: Exception) {
+            throw MediaCompressionException("Failed to create thumbnail", e)
+        }
+    }
+
+    /**
+     * ✅ Save media locally for offline access
+     */
+    private suspend fun saveMediaLocally(
+        compressedMedia: CompressedMediaData,
+        thumbnail: ThumbnailData,
+        entityType: String,
+        entityId: String,
+        mediaType: MediaType
+    ): LocalMediaData {
+        val mediaEntity = MediaEntity(
+            id = UUID.randomUUID().toString(),
+            entityType = entityType,
+            entityId = entityId,
+            mediaType = mediaType,
+            localPath = compressedMedia.uri.path ?: "",
+            thumbnailPath = thumbnail.uri.path ?: "",
+            isUploaded = false,
+            createdAt = Date(),
+            updatedAt = Date()
+        )
+
+        mediaDao.insert(mediaEntity)
+
+        return LocalMediaData(
+            compressedUri = compressedMedia.uri,
+            thumbnailUri = thumbnail.uri,
+            mediaEntity = mediaEntity
+        )
+    }
+
+    /**
+     * ✅ Calculate optimal image size for rural networks
+     */
+    private fun calculateOptimalSize(
+        originalWidth: Int,
+        originalHeight: Int,
+        maxSize: Int
+    ): Pair<Int, Int> {
+        if (originalWidth <= maxSize && originalHeight <= maxSize) {
+            return Pair(originalWidth, originalHeight)
+        }
+
+        val ratio = originalWidth.toFloat() / originalHeight.toFloat()
+
+        return if (originalWidth > originalHeight) {
+            Pair(maxSize, (maxSize / ratio).toInt())
+        } else {
+            Pair((maxSize * ratio).toInt(), maxSize)
+        }
+    }
+
+    /**
+     * ✅ Progressive image loading with thumbnail first
+     */
+    suspend fun loadImageProgressively(mediaId: String): Flow<ProgressiveImageData> = flow {
+        try {
+            val mediaEntity = mediaDao.getById(mediaId)
+
+            if (mediaEntity != null) {
+                // ✅ Emit thumbnail first for immediate display
+                if (mediaEntity.thumbnailPath.isNotEmpty()) {
+                    emit(ProgressiveImageData.Thumbnail(Uri.parse(mediaEntity.thumbnailPath)))
+                }
+
+                // ✅ Then emit full image
+                if (mediaEntity.localPath.isNotEmpty()) {
+                    emit(ProgressiveImageData.FullImage(Uri.parse(mediaEntity.localPath)))
+                } else if (mediaEntity.remoteUrl?.isNotEmpty() == true) {
+                    // Download and cache if not available locally
+                    val localUri = downloadAndCache(mediaEntity.remoteUrl!!, mediaId)
+                    emit(ProgressiveImageData.FullImage(localUri))
+                }
+            }
+        } catch (e: Exception) {
+            emit(ProgressiveImageData.Error(e.message ?: "Failed to load image"))
+        }
+    }
+
+    private suspend fun compressVideo(uri: Uri): CompressedMediaData {
+        // Placeholder for video compression
+        return CompressedMediaData(uri, byteArrayOf())
+    }
+
+    private suspend fun createVideoThumbnail(uri: Uri): ThumbnailData {
+        // Placeholder for video thumbnail creation
+        return ThumbnailData(uri, byteArrayOf())
+    }
+
+    private suspend fun uploadThumbnail(thumbnailUri: Uri, mediaId: String) {
+        // Placeholder for thumbnail upload
+    }
+
+    private suspend fun downloadAndCache(remoteUrl: String, mediaId: String): Uri {
+        // Placeholder for download and cache
+        return Uri.EMPTY
+    }
 }
+
+/**
+ * ✅ Data classes for media optimization
+ */
+data class CompressedMediaData(
+    val uri: Uri,
+    val data: ByteArray
+)
+
+data class ThumbnailData(
+    val uri: Uri,
+    val data: ByteArray
+)
+
+data class LocalMediaData(
+    val compressedUri: Uri,
+    val thumbnailUri: Uri,
+    val mediaEntity: MediaEntity
+)
+
+sealed class ProgressiveImageData {
+    data class Thumbnail(val uri: Uri) : ProgressiveImageData()
+    data class FullImage(val uri: Uri) : ProgressiveImageData()
+    data class Error(val message: String) : ProgressiveImageData()
+}
+
+sealed class MediaUploadProgress {
+    data class Started(val message: String) : MediaUploadProgress()
+    data class Compressing(val progress: Float, val message: String) : MediaUploadProgress()
+    data class Uploading(val progress: Float, val message: String) : MediaUploadProgress()
+    data class Completed(val mediaId: String, val remoteUrl: String) : MediaUploadProgress()
+    data class Error(val message: String) : MediaUploadProgress()
+}
+
+class MediaCompressionException(message: String, cause: Throwable? = null) : Exception(message, cause)
