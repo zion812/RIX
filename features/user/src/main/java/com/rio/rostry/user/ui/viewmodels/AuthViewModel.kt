@@ -24,40 +24,31 @@ class AuthViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : BaseViewModel() {
 
-    // Authentication state
+    // States
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    // Login form state
     private val _loginState = MutableStateFlow(LoginFormState())
     val loginState: StateFlow<LoginFormState> = _loginState.asStateFlow()
 
-    // Registration form state
+    // ... other states
     private val _registrationState = MutableStateFlow(RegistrationFormState())
     val registrationState: StateFlow<RegistrationFormState> = _registrationState.asStateFlow()
-
-    // Phone verification state
     private val _phoneVerificationState = MutableStateFlow(PhoneVerificationState())
     val phoneVerificationState: StateFlow<PhoneVerificationState> = _phoneVerificationState.asStateFlow()
-
-    // Password reset state
     private val _passwordResetState = MutableStateFlow(PasswordResetState())
     val passwordResetState: StateFlow<PasswordResetState> = _passwordResetState.asStateFlow()
+
 
     init {
         checkAuthenticationState()
     }
 
-    /**
-     * Check current authentication state
-     */
     private fun checkAuthenticationState() {
         viewModelScope.launch {
             getCurrentUserUseCase().collect { result ->
                 _authState.value = when (result) {
-                    is Result.Success -> {
-                        result.data?.let { AuthState.Authenticated(it) } ?: AuthState.Unauthenticated
-                    }
+                    is Result.Success -> result.data?.let { AuthState.Authenticated(it) } ?: AuthState.Unauthenticated
                     is Result.Error -> AuthState.Error(result.exception)
                     is Result.Loading -> AuthState.Loading
                 }
@@ -66,40 +57,37 @@ class AuthViewModel @Inject constructor(
     }
 
     /**
-     * Sign in with email and password
+     * Sign in with email and password by calling the SignInUseCase
      */
     fun signInWithEmail(email: String, password: String) {
         viewModelScope.launch {
-            _authState.value = AuthState.Loading
-            _loginState.value = _loginState.value.copy(isLoading = true, error = null)
-
-            try {
-                // Simulate network delay
-                delay(1500)
-
-                // Demo authentication logic
-                if (isValidCredentials(email, password)) {
-                    val user = createDemoUser(email)
-                    _authState.value = AuthState.Authenticated(user)
-                    _loginState.value = _loginState.value.copy(isLoading = false)
-                    logUserAction("sign_in_email", mapOf("user_tier" to user.tier.name))
-                } else {
-                    val error = AppError.AuthenticationError("Invalid email or password")
-                    _authState.value = AuthState.Error(error)
-                    _loginState.value = _loginState.value.copy(
-                        isLoading = false,
-                        error = error.message
-                    )
+            signInUseCase(email, password).collect { result ->
+                when (result) {
+                    is Result.Loading -> {
+                        _authState.value = AuthState.Loading
+                        _loginState.value = _loginState.value.copy(isLoading = true, error = null)
+                    }
+                    is Result.Success -> {
+                        val user = result.data
+                        _authState.value = AuthState.Authenticated(user)
+                        _loginState.value = _loginState.value.copy(isLoading = false)
+                        logUserAction("sign_in_email", mapOf("user_tier" to user.tier.name))
+                    }
+                    is Result.Error -> {
+                        val error = AppError.AuthenticationError("Invalid email or password", result.exception)
+                        _authState.value = AuthState.Error(error)
+                        _loginState.value = _loginState.value.copy(
+                            isLoading = false,
+                            error = error.message
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(AppError.NetworkError("Network error occurred", e))
-                _loginState.value = _loginState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Authentication failed"
-                )
             }
         }
     }
+
+    // Other methods (signUp, signOut, etc.) would be refactored similarly
+    // but are left as is to keep the scope of this change focused.
 
     /**
      * Sign up with email
@@ -142,6 +130,8 @@ class AuthViewModel @Inject constructor(
             logUserAction("sign_out")
         }
     }
+
+    // ... other methods and helper functions remain the same for now
 
     /**
      * Send password reset email
@@ -340,47 +330,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun isValidCredentials(email: String, password: String): Boolean {
-        return when {
-            email == "farmer@rio.com" && password == "demo123" -> true
-            email == "enthusiast@rio.com" && password == "demo123" -> true
-            email == "user@rio.com" && password == "demo123" -> true
-            else -> false
-        }
-    }
-
-    private fun createDemoUser(email: String): User {
-        return when (email) {
-            "farmer@rio.com" -> User(
-                id = "farmer_001",
-                email = email,
-                displayName = "John Farmer",
-                phoneNumber = "+1234567890",
-                tier = UserTier.FARMER,
-                isEmailVerified = true,
-                isPhoneVerified = true
-            )
-            "enthusiast@rio.com" -> User(
-                id = "enthusiast_001",
-                email = email,
-                displayName = "Jane Enthusiast",
-                phoneNumber = "+1234567891",
-                tier = UserTier.ENTHUSIAST,
-                isEmailVerified = true,
-                isPhoneVerified = false
-            )
-            else -> User(
-                id = "user_001",
-                email = email,
-                displayName = "Demo User",
-                phoneNumber = "+1234567892",
-                tier = UserTier.GENERAL,
-                isEmailVerified = false,
-                isPhoneVerified = false
-            )
-        }
-    }
-
+    // The demo helper methods are no longer needed here
     private fun createDemoUserFromPhone(phoneNumber: String): User {
         return User(
             id = "phone_user_001",
@@ -392,15 +342,10 @@ class AuthViewModel @Inject constructor(
             isPhoneVerified = true
         )
     }
-
-    private fun generateUserId(): String {
-        return "user_${System.currentTimeMillis()}"
-    }
 }
 
-/**
- * Login form state
- */
+// Data classes for form states remain the same
+// ...
 data class LoginFormState(
     val email: String = "",
     val password: String = "",
@@ -425,9 +370,6 @@ data class LoginFormState(
         get() = isEmailValid && isPasswordValid && !isLoading
 }
 
-/**
- * Registration form state
- */
 data class RegistrationFormState(
     val email: String = "",
     val password: String = "",
@@ -451,9 +393,6 @@ data class RegistrationFormState(
                 isDisplayNameValid && agreedToTerms && !isLoading
 }
 
-/**
- * Phone verification state
- */
 data class PhoneVerificationState(
     val phoneNumber: String = "",
     val verificationCode: String = "",
@@ -462,9 +401,6 @@ data class PhoneVerificationState(
     val error: String? = null
 )
 
-/**
- * Password reset state
- */
 data class PasswordResetState(
     val email: String = "",
     val isLoading: Boolean = false,
