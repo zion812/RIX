@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">ROSTRY</string>
+    <string name="consent_title">Consent and Data Usage</string>
+    <string name="consent_message">We collect and process data to provide core features. Please review and accept to continue. You can manage consent anytime in Settings.</string>
+    <string name="data_retention_agree">I agree to RBI/GDPR data retention policy</string>
+    <string name="action_accept">Accept</string>
+    <string name="action_decline">Decline</string>
 </resources>

@@ -2,214 +2,117 @@ package com.rio.rostry.core.database.dao
 
 import androidx.room.*
 import com.rio.rostry.core.database.entities.NotificationEntity
-import com.rio.rostry.core.database.entities.NotificationPreferenceEntity
-import com.rio.rostry.core.database.entities.TopicSubscriptionEntity
-import com.rio.rostry.core.database.entities.NotificationAnalyticsEntity
 import kotlinx.coroutines.flow.Flow
 import java.util.*
 
 /**
- * Data Access Object for notification operations
- * Supports offline-first architecture with sync capabilities
+ * Data Access Object for notification-related operations
  */
 @Dao
 interface NotificationDao {
     
-    // Notification CRUD operations
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(notification: NotificationEntity)
+    @Query("SELECT * FROM notifications WHERE id = :notificationId")
+    suspend fun getNotificationById(notificationId: String): NotificationEntity?
+    
+    @Query("SELECT * FROM notifications WHERE userId = :userId ORDER BY createdAt DESC")
+    fun getNotificationsByUser(userId: String): Flow<List<NotificationEntity>>
+    
+    @Query("SELECT * FROM notifications WHERE userId = :userId AND isRead = 0 ORDER BY createdAt DESC")
+    suspend fun getUnreadNotifications(userId: String): List<NotificationEntity>
+    
+    @Query("SELECT COUNT(*) FROM notifications WHERE userId = :userId AND isRead = 0")
+    suspend fun getUnreadNotificationCount(userId: String): Int
+    
+    @Query("SELECT COUNT(*) FROM notifications WHERE userId = :userId AND isRead = 0")
+    fun observeUnreadNotificationCount(userId: String): Flow<Int>
+    
+    @Query("SELECT * FROM notifications WHERE userId = :userId AND category = :category ORDER BY createdAt DESC LIMIT :limit")
+    suspend fun getNotificationsByCategory(userId: String, category: String, limit: Int = 50): List<NotificationEntity>
+    
+    @Query("SELECT * FROM notifications WHERE userId = :userId AND priority = :priority ORDER BY createdAt DESC LIMIT :limit")
+    suspend fun getNotificationsByPriority(userId: String, priority: String, limit: Int = 50): List<NotificationEntity>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(notifications: List<NotificationEntity>)
+    suspend fun insertNotification(notification: NotificationEntity)
+    
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertNotifications(notifications: List<NotificationEntity>)
     
     @Update
-    suspend fun update(notification: NotificationEntity)
+    suspend fun updateNotification(notification: NotificationEntity)
+    
+    @Query("UPDATE notifications SET isRead = 1, readAt = :readAt, updatedAt = :updatedAt WHERE id = :notificationId")
+    suspend fun markAsRead(notificationId: String, readAt: Date = Date(), updatedAt: Date = Date())
+    
+    @Query("UPDATE notifications SET isRead = 1, readAt = :readAt, updatedAt = :updatedAt WHERE userId = :userId AND isRead = 0")
+    suspend fun markAllAsRead(userId: String, readAt: Date = Date(), updatedAt: Date = Date())
+    
+    @Query("UPDATE notifications SET isRead = 1, readAt = :readAt, updatedAt = :updatedAt WHERE userId = :userId AND category = :category AND isRead = 0")
+    suspend fun markCategoryAsRead(userId: String, category: String, readAt: Date = Date(), updatedAt: Date = Date())
     
     @Delete
-    suspend fun delete(notification: NotificationEntity)
+    suspend fun deleteNotification(notification: NotificationEntity)
     
     @Query("DELETE FROM notifications WHERE id = :notificationId")
-    suspend fun deleteById(notificationId: String)
+    suspend fun deleteNotificationById(notificationId: String)
     
-    @Query("DELETE FROM notifications WHERE createdAt < :cutoffDate")
-    suspend fun deleteOlderThan(cutoffDate: Date)
+    @Query("DELETE FROM notifications WHERE userId = :userId")
+    suspend fun deleteAllNotificationsByUser(userId: String)
     
-    // Query operations
-    @Query("SELECT * FROM notifications ORDER BY createdAt DESC LIMIT :limit")
-    fun getRecentNotifications(limit: Int): Flow<List<NotificationEntity>>
-    
-    @Query("SELECT * FROM notifications WHERE category = :category ORDER BY createdAt DESC")
-    fun getNotificationsByCategory(category: String): Flow<List<NotificationEntity>>
-    
-    @Query("SELECT * FROM notifications WHERE isRead = 0 ORDER BY createdAt DESC")
-    fun getUnreadNotifications(): Flow<List<NotificationEntity>>
-    
-    @Query("SELECT COUNT(*) FROM notifications WHERE isRead = 0")
-    fun getUnreadCount(): Flow<Int>
-    
-    @Query("SELECT * FROM notifications WHERE id = :notificationId")
-    suspend fun getById(notificationId: String): NotificationEntity?
-    
-    @Query("SELECT * FROM notifications WHERE deepLink LIKE :pattern")
-    fun getNotificationsByDeepLink(pattern: String): Flow<List<NotificationEntity>>
-    
-    // Mark as read operations
-    @Query("UPDATE notifications SET isRead = 1, readAt = :readAt WHERE id = :notificationId")
-    suspend fun markAsRead(notificationId: String, readAt: Date = Date())
-    
-    @Query("UPDATE notifications SET isRead = 1, readAt = :readAt WHERE isRead = 0")
-    suspend fun markAllAsRead(readAt: Date = Date())
-    
-    @Query("UPDATE notifications SET isRead = 1, readAt = :readAt WHERE category = :category AND isRead = 0")
-    suspend fun markCategoryAsRead(category: String, readAt: Date = Date())
+    @Query("DELETE FROM notifications WHERE userId = :userId AND category = :category")
+    suspend fun deleteNotificationsByCategory(userId: String, category: String)
     
     // Sync operations
     @Query("SELECT * FROM notifications WHERE isSynced = 0")
     suspend fun getUnsyncedNotifications(): List<NotificationEntity>
     
-    @Query("UPDATE notifications SET isSynced = 1, syncedAt = :syncedAt WHERE id = :notificationId")
-    suspend fun markAsSynced(notificationId: String, syncedAt: Date = Date())
+    @Query("UPDATE notifications SET isSynced = 1 WHERE id = :notificationId")
+    suspend fun markNotificationAsSynced(notificationId: String)
+    
+    // Cleanup operations
+    @Query("DELETE FROM notifications WHERE expiresAt IS NOT NULL AND expiresAt < :currentTime")
+    suspend fun deleteExpiredNotifications(currentTime: Date = Date())
+    
+    @Query("DELETE FROM notifications WHERE createdAt < :cutoffDate")
+    suspend fun deleteOldNotifications(cutoffDate: Date)
+    
+    @Query("SELECT * FROM notifications WHERE expiresAt IS NOT NULL AND expiresAt < :currentTime")
+    suspend fun getExpiredNotifications(currentTime: Date = Date()): List<NotificationEntity>
+    
+    // Analytics
+    @Query("SELECT COUNT(*) FROM notifications WHERE userId = :userId")
+    suspend fun getTotalNotificationCount(userId: String): Int
+    
+    @Query("SELECT COUNT(*) FROM notifications WHERE userId = :userId AND isRead = 1")
+    suspend fun getReadNotificationCount(userId: String): Int
+    
+    @Query("SELECT category, COUNT(*) as count FROM notifications WHERE userId = :userId GROUP BY category ORDER BY count DESC")
+    suspend fun getNotificationCategoryDistribution(userId: String): List<CategoryCount>
+    
+    @Query("SELECT priority, COUNT(*) as count FROM notifications WHERE userId = :userId GROUP BY priority ORDER BY count DESC")
+    suspend fun getNotificationPriorityDistribution(userId: String): List<PriorityCount>
+    
+    @Query("SELECT * FROM notifications WHERE userId = :userId AND createdAt >= :startDate AND createdAt <= :endDate ORDER BY createdAt DESC")
+    suspend fun getNotificationsByDateRange(userId: String, startDate: Date, endDate: Date): List<NotificationEntity>
     
     // Search operations
-    @Query("SELECT * FROM notifications WHERE title LIKE :query OR body LIKE :query ORDER BY createdAt DESC")
-    fun searchNotifications(query: String): Flow<List<NotificationEntity>>
+    @Query("SELECT * FROM notifications WHERE userId = :userId AND (title LIKE '%' || :query || '%' OR message LIKE '%' || :query || '%') ORDER BY createdAt DESC LIMIT :limit")
+    suspend fun searchNotifications(userId: String, query: String, limit: Int = 50): List<NotificationEntity>
     
-    // Statistics
-    @Query("SELECT COUNT(*) FROM notifications WHERE category = :category")
-    suspend fun getCountByCategory(category: String): Int
+    // Pagination
+    @Query("SELECT * FROM notifications WHERE userId = :userId ORDER BY createdAt DESC LIMIT :limit OFFSET :offset")
+    suspend fun getNotificationsPaginated(userId: String, limit: Int = 20, offset: Int = 0): List<NotificationEntity>
     
-    @Query("SELECT COUNT(*) FROM notifications WHERE createdAt >= :startDate AND createdAt <= :endDate")
-    suspend fun getCountInDateRange(startDate: Date, endDate: Date): Int
+    @Query("SELECT * FROM notifications WHERE userId = :userId AND isRead = 0 ORDER BY priority DESC, createdAt DESC LIMIT :limit")
+    suspend fun getUnreadNotificationsPrioritized(userId: String, limit: Int = 10): List<NotificationEntity>
 }
 
-/**
- * Data Access Object for notification preferences
- */
-@Dao
-interface NotificationPreferenceDao {
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(preferences: NotificationPreferenceEntity)
-    
-    @Update
-    suspend fun update(preferences: NotificationPreferenceEntity)
-    
-    @Delete
-    suspend fun delete(preferences: NotificationPreferenceEntity)
-    
-    @Query("SELECT * FROM notification_preferences WHERE userId = :userId")
-    fun getPreferences(userId: String): Flow<NotificationPreferenceEntity?>
-    
-    @Query("SELECT * FROM notification_preferences WHERE userId = :userId")
-    suspend fun getPreferencesSync(userId: String): NotificationPreferenceEntity?
-    
-    @Query("UPDATE notification_preferences SET marketplaceNotifications = :enabled WHERE userId = :userId")
-    suspend fun updateMarketplaceNotifications(userId: String, enabled: Boolean)
-    
-    @Query("UPDATE notification_preferences SET transferNotifications = :enabled WHERE userId = :userId")
-    suspend fun updateTransferNotifications(userId: String, enabled: Boolean)
-    
-    @Query("UPDATE notification_preferences SET communicationNotifications = :enabled WHERE userId = :userId")
-    suspend fun updateCommunicationNotifications(userId: String, enabled: Boolean)
-    
-    @Query("UPDATE notification_preferences SET breedingNotifications = :enabled WHERE userId = :userId")
-    suspend fun updateBreedingNotifications(userId: String, enabled: Boolean)
-    
-    @Query("UPDATE notification_preferences SET paymentNotifications = :enabled WHERE userId = :userId")
-    suspend fun updatePaymentNotifications(userId: String, enabled: Boolean)
-    
-    @Query("UPDATE notification_preferences SET systemNotifications = :enabled WHERE userId = :userId")
-    suspend fun updateSystemNotifications(userId: String, enabled: Boolean)
-    
-    @Query("UPDATE notification_preferences SET quietHoursEnabled = :enabled, quietHoursStart = :start, quietHoursEnd = :end WHERE userId = :userId")
-    suspend fun updateQuietHours(userId: String, enabled: Boolean, start: String, end: String)
-    
-    @Query("UPDATE notification_preferences SET soundEnabled = :enabled WHERE userId = :userId")
-    suspend fun updateSoundEnabled(userId: String, enabled: Boolean)
-    
-    @Query("UPDATE notification_preferences SET vibrationEnabled = :enabled WHERE userId = :userId")
-    suspend fun updateVibrationEnabled(userId: String, enabled: Boolean)
-}
+data class CategoryCount(
+    val category: String,
+    val count: Int
+)
 
-/**
- * Data Access Object for topic subscriptions
- */
-@Dao
-interface TopicSubscriptionDao {
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(subscription: TopicSubscriptionEntity)
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(subscriptions: List<TopicSubscriptionEntity>)
-    
-    @Update
-    suspend fun update(subscription: TopicSubscriptionEntity)
-    
-    @Delete
-    suspend fun delete(subscription: TopicSubscriptionEntity)
-    
-    @Query("SELECT * FROM topic_subscriptions WHERE userId = :userId")
-    fun getUserSubscriptions(userId: String): Flow<List<TopicSubscriptionEntity>>
-    
-    @Query("SELECT * FROM topic_subscriptions WHERE userId = :userId AND isSubscribed = 1")
-    fun getActiveSubscriptions(userId: String): Flow<List<TopicSubscriptionEntity>>
-    
-    @Query("SELECT * FROM topic_subscriptions WHERE userId = :userId AND topicName = :topicName")
-    suspend fun getSubscription(userId: String, topicName: String): TopicSubscriptionEntity?
-    
-    @Query("UPDATE topic_subscriptions SET isSubscribed = :subscribed, unsubscribedAt = :timestamp WHERE userId = :userId AND topicName = :topicName")
-    suspend fun updateSubscriptionStatus(userId: String, topicName: String, subscribed: Boolean, timestamp: Date = Date())
-    
-    @Query("SELECT * FROM topic_subscriptions WHERE isSynced = 0")
-    suspend fun getUnsyncedSubscriptions(): List<TopicSubscriptionEntity>
-    
-    @Query("UPDATE topic_subscriptions SET isSynced = 1, syncedAt = :syncedAt WHERE id = :subscriptionId")
-    suspend fun markAsSynced(subscriptionId: String, syncedAt: Date = Date())
-}
-
-/**
- * Data Access Object for notification analytics
- */
-@Dao
-interface NotificationAnalyticsDao {
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(analytics: NotificationAnalyticsEntity)
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(analytics: List<NotificationAnalyticsEntity>)
-    
-    @Query("SELECT * FROM notification_analytics WHERE notificationId = :notificationId ORDER BY timestamp DESC")
-    fun getAnalyticsForNotification(notificationId: String): Flow<List<NotificationAnalyticsEntity>>
-    
-    @Query("SELECT * FROM notification_analytics WHERE userId = :userId ORDER BY timestamp DESC LIMIT :limit")
-    fun getUserAnalytics(userId: String, limit: Int): Flow<List<NotificationAnalyticsEntity>>
-    
-    @Query("SELECT * FROM notification_analytics WHERE eventType = :eventType ORDER BY timestamp DESC")
-    fun getAnalyticsByEventType(eventType: String): Flow<List<NotificationAnalyticsEntity>>
-    
-    @Query("SELECT * FROM notification_analytics WHERE isSynced = 0")
-    suspend fun getUnsyncedAnalytics(): List<NotificationAnalyticsEntity>
-    
-    @Query("UPDATE notification_analytics SET isSynced = 1, syncedAt = :syncedAt WHERE id = :analyticsId")
-    suspend fun markAsSynced(analyticsId: String, syncedAt: Date = Date())
-    
-    @Query("DELETE FROM notification_analytics WHERE timestamp < :cutoffDate")
-    suspend fun deleteOlderThan(cutoffDate: Date)
-    
-    // Analytics queries
-    @Query("SELECT COUNT(*) FROM notification_analytics WHERE eventType = :eventType AND timestamp >= :startDate")
-    suspend fun getEventCountSince(eventType: String, startDate: Date): Int
-    
-    @Query("SELECT eventType, COUNT(*) as count FROM notification_analytics WHERE timestamp >= :startDate GROUP BY eventType")
-    suspend fun getEventCountsByType(startDate: Date): List<EventTypeCount>
-}
-
-/**
- * Data class for event type count results
- */
-data class EventTypeCount(
-    val eventType: String,
+data class PriorityCount(
+    val priority: String,
     val count: Int
 )

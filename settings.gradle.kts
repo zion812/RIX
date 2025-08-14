@@ -24,12 +24,17 @@ include(":app")
 
 // Core modules
 include(":core:common")
-// include(":core:data") // Temporarily disabled due to database dependencies
+include(":core:data")
 include(":core:database")
+include(":core:database-simple")
 include(":core:network")
 include(":core:analytics")
+include(":core:payment")
+include(":core:notifications")
+include(":core:sync")
+include(":core:media")
 
-// Feature modules
+// Feature modules - Re-enabled
 include(":features:fowl")
 include(":features:marketplace")
 include(":features:familytree")

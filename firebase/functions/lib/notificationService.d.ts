@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions';
 /**
  * Comprehensive FCM-based notification service for RIO platform
  * Supports real-time messaging with offline-first architecture integration
@@ -41,7 +40,7 @@ export declare enum NotificationPriority {
 /**
  * Send notification to specific users or topics
  */
-export declare const sendNotification: functions.HttpsFunction & functions.Runnable<any>;
+export declare const sendNotification: any;
 /**
  * Process and send notification with proper targeting and personalization
  */
@@ -49,5 +48,5 @@ export declare function processNotification(payload: NotificationPayload, sender
 /**
  * Process scheduled notifications
  */
-export declare const processScheduledNotifications: functions.CloudFunction<unknown>;
+export declare const processScheduledNotifications: any;
 //# sourceMappingURL=notificationService.d.ts.map

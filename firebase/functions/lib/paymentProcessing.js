@@ -148,10 +148,15 @@ exports.verifyPaymentAndCreditCoins = functions
     const { orderId, paymentId, signature } = data;
     const userId = context.auth.uid;
     try {
-        // Get order details
-        const orderDoc = await db.collection('coin_orders').doc(orderId).get();
-        if (!orderDoc.exists) {
-            throw new functions.https.HttpsError('not-found', 'Order not found');
+        // Check if this is a demo order first
+        let orderDoc = await db.collection('demo_orders').doc(orderId).get();
+        let isDemo = orderDoc.exists;
+        // If not demo, check regular orders
+        if (!isDemo) {
+            orderDoc = await db.collection('coin_orders').doc(orderId).get();
+            if (!orderDoc.exists) {
+                throw new functions.https.HttpsError('not-found', 'Order not found');
+            }
         }
         const orderData = orderDoc.data();
         // Verify order belongs to user
@@ -162,6 +167,11 @@ exports.verifyPaymentAndCreditCoins = functions
         if (orderData.status === 'COMPLETED') {
             throw new functions.https.HttpsError('already-exists', 'Payment already processed');
         }
+        if (isDemo) {
+            // Handle demo payment verification
+            return await verifyDemoPayment(orderId, paymentId, signature, userId, orderData);
+        }
+        // Handle real payment verification
         // Verify payment signature
         const isValidSignature = verifyRazorpaySignature(orderId, paymentId, signature);
         if (!isValidSignature) {
@@ -409,6 +419,114 @@ async function updateOrderStatus(orderId, status, message, additionalData) {
     if (additionalData)
         Object.assign(updateData, additionalData);
     await db.collection('coin_orders').doc(orderId).update(updateData);
+}
+/**
+ * Verify demo payment and credit coins
+ */
+async function verifyDemoPayment(orderId, paymentId, signature, userId, orderData) {
+    try {
+        // Validate demo payment ID format
+        if (!paymentId.startsWith('demo_pay_')) {
+            throw new functions.https.HttpsError('invalid-argument', 'Invalid demo payment ID');
+        }
+        // Validate demo signature (simple validation for demo)
+        const expectedSignature = `demo_signature_${orderId}_${paymentId}`;
+        if (!signature.includes('demo_signature_')) {
+            throw new functions.https.HttpsError('invalid-argument', 'Invalid demo signature');
+        }
+        // Get package details for coin calculation
+        const packageDetails = getDemoPackageDetails(orderData.packageId);
+        // Credit coins to user account
+        const coinCreditResult = await creditCoinsToUser(userId, Object.assign(Object.assign({}, orderData), { totalCoins: packageDetails.totalCoins }));
+        // Update demo order status
+        await db.collection('demo_orders').doc(orderId).update({
+            status: 'COMPLETED',
+            paymentId: paymentId,
+            signature: signature,
+            completedAt: admin.firestore.FieldValue.serverTimestamp(),
+            coinTransactionId: coinCreditResult.transactionId
+        });
+        // Log demo transaction
+        await logDemoTransaction({
+            type: 'PAYMENT_VERIFIED',
+            orderId: orderId,
+            paymentId: paymentId,
+            userId: userId,
+            coinsAdded: packageDetails.totalCoins,
+            transactionId: coinCreditResult.transactionId
+        });
+        // Send demo confirmation
+        await sendDemoPaymentConfirmation(userId, orderData, coinCreditResult);
+        return {
+            success: true,
+            transactionId: coinCreditResult.transactionId,
+            coinsAdded: packageDetails.totalCoins,
+            newBalance: coinCreditResult.newBalance,
+            isDemoPayment: true
+        };
+    }
+    catch (error) {
+        console.error('Error verifying demo payment:', error);
+        // Update demo order status on error
+        await db.collection('demo_orders').doc(orderId).update({
+            status: 'FAILED',
+            failureReason: error instanceof Error ? error.message : 'Unknown error',
+            failedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        throw error;
+    }
+}
+/**
+ * Get demo package details
+ */
+function getDemoPackageDetails(packageId) {
+    const packages = {
+        'package_100': { coins: 20, bonusCoins: 0, priceInRupees: 100 },
+        'package_500': { coins: 100, bonusCoins: 10, priceInRupees: 500 },
+        'package_1000': { coins: 200, bonusCoins: 25, priceInRupees: 1000 },
+        'package_2000': { coins: 400, bonusCoins: 60, priceInRupees: 2000 },
+        'package_5000': { coins: 1000, bonusCoins: 200, priceInRupees: 5000 }
+    };
+    const packageDetails = packages[packageId] || packages['package_100'];
+    return Object.assign(Object.assign({}, packageDetails), { totalCoins: packageDetails.coins + packageDetails.bonusCoins });
+}
+/**
+ * Log demo transaction for tracking
+ */
+async function logDemoTransaction(data) {
+    try {
+        await db.collection('demo_transaction_logs').add(Object.assign(Object.assign({}, data), { timestamp: admin.firestore.FieldValue.serverTimestamp(), environment: 'demo' }));
+    }
+    catch (error) {
+        console.error('Error logging demo transaction:', error);
+        // Don't throw error for logging failures
+    }
+}
+/**
+ * Send demo payment confirmation
+ */
+async function sendDemoPaymentConfirmation(userId, orderData, coinCreditResult) {
+    try {
+        // Create notification for demo payment
+        await db.collection('notifications').add({
+            userId: userId,
+            type: 'DEMO_PAYMENT_SUCCESS',
+            title: 'Demo Payment Successful! 🎉',
+            message: `${coinCreditResult.coinsAdded} coins have been added to your account. This was a demo transaction.`,
+            data: {
+                orderId: orderData.id,
+                coinsAdded: coinCreditResult.coinsAdded,
+                newBalance: coinCreditResult.newBalance,
+                isDemoPayment: true
+            },
+            isRead: false,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+    }
+    catch (error) {
+        console.error('Error sending demo payment confirmation:', error);
+        // Don't throw error for notification failures
+    }
 }
 function applyTierDiscount(amount, purpose, userTier) {
     const discounts = {

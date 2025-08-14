@@ -30,64 +30,7 @@ import java.util.*
         ForeignKey(
             entity = UserEntity::class,
             parentColumns = ["id"],
-            childColumns = ["from_user_id"],
-            onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = UserEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["to_user_id"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ]
-)
-data class TransferEntity(
-    @PrimaryKey
-    @ColumnInfo(name = "id")
-    override val id: String,
-    
-    @ColumnInfo(name = "fowl_id")
-    val fowlId: String,
-    
-    @ColumnInfo(name = "from_user_id")
-    val fromUserId: String,
-    
-    @ColumnInfo(name = "to_user_id")
-    val toUserId: String,
-    
-    // Transfer details
-    @ColumnInfo(name = "transfer_type")
-    val transferType: String, // SALE, GIFT, INHERITANCE, BREEDING_LOAN, TRADE, RETURN
-    
-    @ColumnInfo(name = "transfer_status")
-    val transferStatus: String, // INITIATED, PENDING_APPROVAL, APPROVED, IN_TRANSIT, COMPLETED, CANCELLED, REJECTED
-    
-    @ColumnInfo(name = "transfer_method")
-    val transferMethod: String, // DIRECT, COURIER, TRANSPORT, PICKUP
-    
-    // Financial information
-    @ColumnInfo(name = "amount")
-    val amount: Double? = null,
-    
-    @ColumnInfo(name = "currency")
-    val currency: String = "INR",
-    
-    @ColumnInfo(name = "payment_method")
-    val paymentMethod: String? = null, // CASH, BANK_TRANSFER, UPI, CHEQUE, BARTER
-    
-    @ColumnInfo(name = "payment_status")
-    val paymentStatus: String = "PENDING", // PENDING, PAID, FAILED, REFUNDED
-    
-    @ColumnInfo(name = "payment_reference")
-    val paymentReference: String? = null,
-    
-    @ColumnInfo(name = "platform_fee")
-    val platformFee: Double = 0.0,
-    
-    @ColumnInfo(name = "payment_fee")
-    val paymentFee: Double = 0.0,
-    
-    @ColumnInfo(name = "delivery_fee")
+
     val deliveryFee: Double = 0.0,
     
     @ColumnInfo(name = "total_amount")

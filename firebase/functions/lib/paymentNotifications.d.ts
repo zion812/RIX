@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions';
 /**
  * Payment system notification triggers for RIO coin-based payments
  * Handles purchase confirmations, refunds, disputes, and balance alerts
@@ -6,13 +5,13 @@ import * as functions from 'firebase-functions';
 /**
  * Send payment notification based on type
  */
-export declare const sendPaymentNotification: functions.HttpsFunction & functions.Runnable<any>;
+export declare const sendPaymentNotification: any;
 /**
  * Trigger when coin transaction is created
  */
-export declare const onCoinTransactionCreated: functions.CloudFunction<functions.firestore.QueryDocumentSnapshot>;
+export declare const onCoinTransactionCreated: any;
 /**
  * Trigger when coin order status changes
  */
-export declare const onCoinOrderStatusChange: functions.CloudFunction<functions.Change<functions.firestore.QueryDocumentSnapshot>>;
+export declare const onCoinOrderStatusChange: any;
 //# sourceMappingURL=paymentNotifications.d.ts.map

@@ -75,58 +75,7 @@ data class MarketplaceEntity(
     @ColumnInfo(name = "stud_fee")
     val studFee: Double? = null,
     
-    // Listing details
-    @ColumnInfo(name = "title")
-    val title: String,
-    
-    @ColumnInfo(name = "description")
-    val description: String,
-    
-    @ColumnInfo(name = "highlights")
-    val highlights: List<String> = emptyList(),
-    
-    @ColumnInfo(name = "breed")
-    val breed: String,
-    
-    @ColumnInfo(name = "gender")
-    val gender: String,
-    
-    @ColumnInfo(name = "age")
-    val age: String,
-    
-    @ColumnInfo(name = "weight")
-    val weight: Double,
-    
-    @ColumnInfo(name = "color")
-    val color: String,
-    
-    @ColumnInfo(name = "health_status")
-    val healthStatus: String,
-    
-    @ColumnInfo(name = "vaccinated")
-    val vaccinated: Boolean,
-    
-    @ColumnInfo(name = "health_certificate")
-    val healthCertificate: String? = null,
-    
-    @ColumnInfo(name = "pedigree_available")
-    val pedigreeAvailable: Boolean,
-    
-    @ColumnInfo(name = "registration_papers")
-    val registrationPapers: Boolean,
-    
-    // Media
-    @ColumnInfo(name = "primary_photo_url")
-    val primaryPhotoUrl: String? = null,
-    
-    @ColumnInfo(name = "photos")
-    val photos: List<String> = emptyList(),
-    
-    @ColumnInfo(name = "videos")
-    val videos: List<String> = emptyList(),
-    
-    // Delivery information
-    @ColumnInfo(name = "delivery_available")
+
     val deliveryAvailable: Boolean,
     
     @ColumnInfo(name = "delivery_radius")

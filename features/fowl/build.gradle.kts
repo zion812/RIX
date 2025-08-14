@@ -2,6 +2,9 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    // Temporarily disable Kapt due to Kotlin 2.0 compatibility issues
+    // id("kotlin-kapt")
+    // id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -39,7 +42,8 @@ android {
 
 dependencies {
     implementation(project(":core:common"))
-    // implementation(project(":core:data")) // Temporarily disabled
+    implementation(project(":core:data")) // Re-enabled for Phase 4
+    implementation(project(":core:database-simple")) // Add database access
     
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -68,7 +72,16 @@ dependencies {
     
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    
+
+    // Room
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+
+    // Hilt - Temporarily disabled due to Kapt issues
+    // implementation("com.google.dagger:hilt-android:2.48")
+    // kapt("com.google.dagger:hilt-compiler:2.48")
+    // implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

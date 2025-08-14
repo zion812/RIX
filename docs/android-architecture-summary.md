@@ -33,13 +33,13 @@ RIO/
 - **Language**: Kotlin 1.9.0+ with Coroutines
 - **Architecture**: MVVM with Clean Architecture principles
 - **Dependency Injection**: Hilt
-- **UI Framework**: Android Views with ViewBinding
-- **Navigation**: Navigation Component with deep linking
-- **Local Database**: Room with offline-first design
-- **Remote Database**: Firebase Firestore with regional optimization
-- **Real-time Data**: Firebase Realtime Database for chat
-- **Image Loading**: Coil with network-aware caching
-- **Background Processing**: WorkManager for sync operations
+- **UI Framework**: Jetpack Compose (Material 3)
+- **Navigation**: Navigation Compose
+- **DI**: Hilt (kapt)
+- **Storage**: Room + Firestore (offline enabled)
+  - App code references DatabaseProvider from :core:database-simple; ensure app depends on this module or refactor
+- **Background Processing**: WorkManager (basic SyncWorker); :core:sync planned
+- **Feature Modules**: Present but not included in app build (staged enablement)
 
 ## 🏗️ **Feature Module Implementations**
 

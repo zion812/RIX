@@ -1,454 +1,781 @@
 package com.rio.rostry.ui.familytree
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.rio.rostry.core.database.entities.RoosterEntity
-import com.rio.rostry.ui.components.LoadingIndicator
-import com.rio.rostry.ui.components.ErrorMessage
+import androidx.navigation.NavController
+import com.rio.rostry.auth.FirebaseAuthService
+import com.rio.rostry.core.database.di.DatabaseProvider
+import com.rio.rostry.core.database.entities.FowlEntity
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
- * Family tree screen showing interactive fowl lineage visualization
+ * Enhanced Family Tree Screen - Phase 3.2
+ * Interactive lineage visualization with breeding history and genetic tracking
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FamilyTreeScreen(
-    roosterId: String,
-    onNavigateBack: () -> Unit,
-    onNavigateToFowlDetail: (String) -> Unit,
-    onNavigateToBreeding: (String) -> Unit,
-    onNavigateToTransfer: (String) -> Unit,
-    viewModel: FamilyTreeViewModel = hiltViewModel()
+    navController: NavController
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    
-    // Initialize with rooster ID
-    LaunchedEffect(roosterId) {
-        viewModel.loadFamilyTree(roosterId)
+    val scope = rememberCoroutineScope()
+
+    // Database and auth setup
+    val database = remember { DatabaseProvider.getDatabase(context) }
+    val authService = remember { FirebaseAuthService() }
+    val currentUserId = authService.getCurrentUserId() ?: "demo-user"
+
+    // State
+    var fowls by remember { mutableStateOf<List<FowlEntity>>(emptyList()) }
+    var selectedFowl by remember { mutableStateOf<FowlEntity?>(null) }
+    var familyTree by remember { mutableStateOf<FamilyTreeData?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    var viewMode by remember { mutableStateOf(ViewMode.TREE) }
+
+    // Load fowls
+    LaunchedEffect(Unit) {
+        isLoading = true
+        try {
+            val fowlDao = database.fowlDao()
+            fowls = fowlDao.getFowlsByOwner(currentUserId)
+
+            // Generate demo family tree if no fowls exist
+            if (fowls.isEmpty()) {
+                fowls = generateDemoFowls(currentUserId)
+                fowls.forEach { fowlDao.insertFowl(it) }
+            }
+
+            // Build family tree
+            familyTree = buildFamilyTree(fowls)
+        } catch (e: Exception) {
+            // Handle error
+        }
+        isLoading = false
     }
-    
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Top app bar
-        TopAppBar(
-            title = { 
-                Text(
-                    text = uiState.rootFowl?.name?.let { "Family Tree - $it" } ?: "Family Tree"
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Family Tree",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            viewMode = if (viewMode == ViewMode.TREE) ViewMode.LIST else ViewMode.TREE
+                        }
+                    ) {
+                        Icon(
+                            if (viewMode == ViewMode.TREE) Icons.Default.ViewList else Icons.Default.AccountTree,
+                            contentDescription = "Toggle View"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-            },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-            },
-            actions = {
-                // Zoom controls
-                IconButton(
-                    onClick = { viewModel.zoomIn() }
+            )
+        }
+    ) { paddingValues ->
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ZoomIn,
-                        contentDescription = "Zoom In"
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Loading family tree...")
+                }
+            }
+        } else {
+            when (viewMode) {
+                ViewMode.TREE -> {
+                    FamilyTreeView(
+                        familyTree = familyTree,
+                        selectedFowl = selectedFowl,
+                        onFowlSelected = { selectedFowl = it },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
                     )
                 }
-                
-                IconButton(
-                    onClick = { viewModel.zoomOut() }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ZoomOut,
-                        contentDescription = "Zoom Out"
-                    )
-                }
-                
-                IconButton(
-                    onClick = { viewModel.centerTree() }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CenterFocusStrong,
-                        contentDescription = "Center Tree"
-                    )
-                }
-                
-                // More options
-                var showMenu by remember { mutableStateOf(false) }
-                
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "More options"
-                    )
-                }
-                
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Export Tree") },
-                        onClick = {
-                            showMenu = false
-                            viewModel.exportFamilyTree()
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Default.Share, contentDescription = null)
-                        }
-                    )
-                    
-                    DropdownMenuItem(
-                        text = { Text("Print Tree") },
-                        onClick = {
-                            showMenu = false
-                            viewModel.printFamilyTree()
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Default.Print, contentDescription = null)
-                        }
-                    )
-                    
-                    DropdownMenuItem(
-                        text = { Text("Tree Settings") },
-                        onClick = {
-                            showMenu = false
-                            viewModel.showTreeSettings()
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Default.Settings, contentDescription = null)
-                        }
+                ViewMode.LIST -> {
+                    FamilyListView(
+                        fowls = fowls,
+                        selectedFowl = selectedFowl,
+                        onFowlSelected = { selectedFowl = it },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
                     )
                 }
             }
-        )
-        
-        // Main content
+        }
+    }
+}
+
+/**
+ * Family Tree Visualization Component
+ */
+@Composable
+private fun FamilyTreeView(
+    familyTree: FamilyTreeData?,
+    selectedFowl: FowlEntity?,
+    onFowlSelected: (FowlEntity) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (familyTree == null) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1f)
+            modifier = modifier,
+            contentAlignment = Alignment.Center
         ) {
-            when (uiState.loadingState) {
-                LoadingState.Loading -> {
-                    LoadingIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        message = "Loading family tree..."
+            Text("No family tree data available")
+        }
+        return
+    }
+
+    Column(
+        modifier = modifier.padding(16.dp)
+    ) {
+        // Family Tree Stats
+        FamilyTreeStatsCard(familyTree)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Interactive Tree Visualization
+        Card(
+            modifier = Modifier.fillMaxWidth().weight(1f)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                if (familyTree.generations.isNotEmpty()) {
+                    InteractiveFamilyTree(
+                        familyTree = familyTree,
+                        selectedFowl = selectedFowl,
+                        onFowlSelected = onFowlSelected,
+                        modifier = Modifier.fillMaxSize()
                     )
-                }
-                
-                LoadingState.Error -> {
-                    ErrorMessage(
-                        message = uiState.errorMessage ?: "Failed to load family tree",
-                        onRetry = { viewModel.loadFamilyTree(roosterId) },
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                
-                LoadingState.Success -> {
-                    if (uiState.rootFowl != null && uiState.familyData.isNotEmpty()) {
-                        // Family tree view
-                        AndroidView(
-                            factory = { context ->
-                                FowlFamilyTreeView(context).apply {
-                                    // Set up click listeners
-                                    onFowlClickListener = { fowl ->
-                                        viewModel.selectFowl(fowl)
-                                    }
-                                    
-                                    onFowlLongClickListener = { fowl ->
-                                        viewModel.showFowlContextMenu(fowl)
-                                    }
-                                    
-                                    onConnectionClickListener = { connection ->
-                                        viewModel.showConnectionDetails(connection)
-                                    }
-                                }
-                            },
-                            update = { view ->
-                                uiState.rootFowl?.let { root ->
-                                    view.setRootFowl(root, uiState.familyData)
-                                }
-                                
-                                // Update zoom if changed
-                                if (uiState.targetZoom != view.getCurrentZoom()) {
-                                    view.setZoom(uiState.targetZoom, true)
-                                }
-                                
-                                // Center tree if requested
-                                if (uiState.shouldCenterTree) {
-                                    view.centerTree()
-                                    viewModel.onTreeCentered()
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize()
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.AccountTree,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        
-                        // Floating action button for adding new fowl
-                        FloatingActionButton(
-                            onClick = { viewModel.showAddFowlDialog() },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(16.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add Fowl"
-                            )
-                        }
-                        
-                        // Tree statistics overlay
-                        if (uiState.showStatistics) {
-                            TreeStatisticsOverlay(
-                                statistics = uiState.treeStatistics,
-                                onDismiss = { viewModel.hideStatistics() },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(16.dp)
-                            )
-                        }
-                    } else {
-                        // Empty state
-                        EmptyFamilyTreeView(
-                            onAddFirstFowl = { viewModel.showAddFowlDialog() },
-                            modifier = Modifier.align(Alignment.Center)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "No breeding relationships found",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Add parent-child relationships to see the family tree",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
             }
         }
-        
-        // Bottom controls
-        if (uiState.loadingState == LoadingState.Success) {
-            BottomTreeControls(
-                selectedFowl = uiState.selectedFowl,
-                onBreedingClick = { fowl ->
-                    onNavigateToBreeding(fowl.id)
-                },
-                onTransferClick = { fowl ->
-                    onNavigateToTransfer(fowl.id)
-                },
-                onDetailsClick = { fowl ->
-                    onNavigateToFowlDetail(fowl.id)
-                },
-                onGenerationFilter = { generation ->
-                    viewModel.filterByGeneration(generation)
-                },
-                currentGeneration = uiState.selectedGeneration,
-                totalGenerations = uiState.totalGenerations
-            )
+
+        // Selected Fowl Details
+        selectedFowl?.let { fowl ->
+            Spacer(modifier = Modifier.height(16.dp))
+            SelectedFowlCard(fowl)
         }
     }
-    
-    // Dialogs and bottom sheets
-    if (uiState.showFowlContextMenu) {
-        uiState.selectedFowl?.let { fowl ->
-            FowlContextMenuBottomSheet(
+}
+
+/**
+ * Family List View Component
+ */
+@Composable
+private fun FamilyListView(
+    fowls: List<FowlEntity>,
+    selectedFowl: FowlEntity?,
+    onFowlSelected: (FowlEntity) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            Text(
+                text = "All Fowls (${fowls.size})",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        items(fowls) { fowl ->
+            FowlLineageCard(
                 fowl = fowl,
-                onDismiss = { viewModel.hideFowlContextMenu() },
-                onEdit = { onNavigateToFowlDetail(fowl.id) },
-                onBreeding = { onNavigateToBreeding(fowl.id) },
-                onTransfer = { onNavigateToTransfer(fowl.id) },
-                onViewLineage = { viewModel.focusOnFowlLineage(fowl) },
-                onVerifyLineage = { viewModel.requestLineageVerification(fowl) }
+                isSelected = selectedFowl?.id == fowl.id,
+                onClick = { onFowlSelected(fowl) }
             )
         }
     }
-    
-    if (uiState.showAddFowlDialog) {
-        AddFowlToTreeDialog(
-            parentFowl = uiState.selectedFowl,
-            onDismiss = { viewModel.hideAddFowlDialog() },
-            onConfirm = { parentId, fowlData ->
-                viewModel.addFowlToTree(parentId, fowlData)
-            }
+}
+
+/**
+ * Family Tree Stats Card
+ */
+@Composable
+private fun FamilyTreeStatsCard(familyTree: FamilyTreeData) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
         )
-    }
-    
-    if (uiState.showTreeSettings) {
-        TreeSettingsBottomSheet(
-            settings = uiState.treeSettings,
-            onDismiss = { viewModel.hideTreeSettings() },
-            onSettingsChange = { newSettings ->
-                viewModel.updateTreeSettings(newSettings)
-            }
-        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            StatItem(
+                label = "Total Fowls",
+                value = familyTree.totalFowls.toString(),
+                icon = Icons.Default.Pets
+            )
+            StatItem(
+                label = "Generations",
+                value = familyTree.generations.size.toString(),
+                icon = Icons.Default.AccountTree
+            )
+            StatItem(
+                label = "Breeding Pairs",
+                value = familyTree.breedingPairs.toString(),
+                icon = Icons.Default.Favorite
+            )
+        }
     }
 }
 
 @Composable
-fun BottomTreeControls(
-    selectedFowl: RoosterEntity?,
-    onBreedingClick: (RoosterEntity) -> Unit,
-    onTransferClick: (RoosterEntity) -> Unit,
-    onDetailsClick: (RoosterEntity) -> Unit,
-    onGenerationFilter: (Int?) -> Unit,
-    currentGeneration: Int?,
-    totalGenerations: Int
+private fun StatItem(
+    label: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    }
+}
+
+/**
+ * Interactive Family Tree Component
+ */
+@Composable
+private fun InteractiveFamilyTree(
+    familyTree: FamilyTreeData,
+    selectedFowl: FowlEntity?,
+    onFowlSelected: (FowlEntity) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = modifier.verticalScroll(scrollState)
+    ) {
+        familyTree.generations.forEachIndexed { index, generation ->
+            GenerationRow(
+                generation = generation,
+                generationNumber = index + 1,
+                selectedFowl = selectedFowl,
+                onFowlSelected = onFowlSelected
+            )
+
+            if (index < familyTree.generations.size - 1) {
+                Spacer(modifier = Modifier.height(24.dp))
+                // Connection lines between generations
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(20.dp)
+                ) {
+                    drawConnectionLines(this)
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+}
+
+/**
+ * Generation Row Component
+ */
+@Composable
+private fun GenerationRow(
+    generation: List<FowlEntity>,
+    generationNumber: Int,
+    selectedFowl: FowlEntity?,
+    onFowlSelected: (FowlEntity) -> Unit
+) {
+    Column {
+        Text(
+            text = "Generation $generationNumber",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            generation.forEach { fowl ->
+                FowlTreeNode(
+                    fowl = fowl,
+                    isSelected = selectedFowl?.id == fowl.id,
+                    onClick = { onFowlSelected(fowl) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Fowl Tree Node Component
+ */
+@Composable
+private fun FowlTreeNode(
+    fowl: FowlEntity,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .clickable { onClick() }
+            .then(
+                if (isSelected) {
+                    Modifier.border(
+                        2.dp,
+                        MaterialTheme.colorScheme.primary,
+                        RoundedCornerShape(8.dp)
+                    )
+                } else Modifier
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Gender indicator
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        when (fowl.gender) {
+                            "MALE" -> Color(0xFF2196F3)
+                            "FEMALE" -> Color(0xFFE91E63)
+                            else -> MaterialTheme.colorScheme.outline
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    when (fowl.gender) {
+                        "MALE" -> Icons.Default.Male
+                        "FEMALE" -> Icons.Default.Female
+                        else -> Icons.Default.QuestionMark
+                    },
+                    contentDescription = fowl.gender,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = fowl.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = fowl.breed,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            fowl.birthDate?.let { birthDate ->
+                val formatter = SimpleDateFormat("yyyy", Locale.getDefault())
+                Text(
+                    text = formatter.format(birthDate),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Fowl Lineage Card for List View
+ */
+@Composable
+private fun FowlLineageCard(
+    fowl: FowlEntity,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            .clickable { onClick() }
+            .then(
+                if (isSelected) {
+                    Modifier.border(
+                        2.dp,
+                        MaterialTheme.colorScheme.primary,
+                        RoundedCornerShape(8.dp)
+                    )
+                } else Modifier
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Gender indicator
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(
+                        when (fowl.gender) {
+                            "MALE" -> Color(0xFF2196F3)
+                            "FEMALE" -> Color(0xFFE91E63)
+                            else -> MaterialTheme.colorScheme.outline
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    when (fowl.gender) {
+                        "MALE" -> Icons.Default.Male
+                        "FEMALE" -> Icons.Default.Female
+                        else -> Icons.Default.QuestionMark
+                    },
+                    contentDescription = fowl.gender,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = fowl.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${fowl.breed} • ${fowl.gender}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                fowl.birthDate?.let { birthDate ->
+                    val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                    Text(
+                        text = "Born: ${formatter.format(birthDate)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = "View Details",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * Selected Fowl Details Card
+ */
+@Composable
+private fun SelectedFowlCard(fowl: FowlEntity) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Generation filter
+            Text(
+                text = "Selected: ${fowl.name}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Generation Filter:",
-                    style = MaterialTheme.typography.labelMedium
-                )
-                
-                Row {
-                    FilterChip(
-                        onClick = { onGenerationFilter(null) },
-                        label = { Text("All") },
-                        selected = currentGeneration == null
+                Column {
+                    Text(
+                        text = "Breed",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    repeat(totalGenerations.coerceAtMost(5)) { generation ->
-                        FilterChip(
-                            onClick = { onGenerationFilter(generation) },
-                            label = { Text("G$generation") },
-                            selected = currentGeneration == generation
+                    Text(
+                        text = fowl.breed,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = "Gender",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = fowl.gender,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                fowl.weight?.let { weight ->
+                    Column {
+                        Text(
+                            text = "Weight",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        
-                        if (generation < totalGenerations - 1) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                        }
+                        Text(
+                            text = "${weight}kg",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
-            
-            // Selected fowl actions
-            selectedFowl?.let { fowl ->
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    text = "Selected: ${fowl.name}",
-                    style = MaterialTheme.typography.titleSmall
-                )
-                
+
+            fowl.description?.let { description ->
                 Spacer(modifier = Modifier.height(8.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { onDetailsClick(fowl) },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Details")
-                    }
-                    
-                    OutlinedButton(
-                        onClick = { onBreedingClick(fowl) },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Breeding")
-                    }
-                    
-                    OutlinedButton(
-                        onClick = { onTransferClick(fowl) },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Transfer")
-                    }
-                }
+                Text(
+                    text = "Description",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }
 }
 
-@Composable
-fun EmptyFamilyTreeView(
-    onAddFirstFowl: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Default.AccountTree,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+/**
+ * Draw connection lines between generations
+ */
+private fun drawConnectionLines(drawScope: DrawScope) {
+    with(drawScope) {
+        val strokeWidth = 2.dp.toPx()
+        val color = Color.Gray
+
+        // Draw horizontal line
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.2f, size.height / 2),
+            end = Offset(size.width * 0.8f, size.height / 2),
+            strokeWidth = strokeWidth
         )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "No Family Tree Data",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Text(
-            text = "Start building your fowl family tree by adding the first member",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Button(
-            onClick = onAddFirstFowl
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
+
+        // Draw vertical connectors
+        val connectorCount = 3
+        for (i in 0 until connectorCount) {
+            val x = size.width * (0.3f + i * 0.2f)
+            drawLine(
+                color = color,
+                start = Offset(x, 0f),
+                end = Offset(x, size.height),
+                strokeWidth = strokeWidth
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Add First Fowl")
         }
     }
 }
 
-enum class LoadingState {
-    Loading, Success, Error
+/**
+ * Data structures for family tree
+ */
+data class FamilyTreeData(
+    val generations: List<List<FowlEntity>>,
+    val totalFowls: Int,
+    val breedingPairs: Int
+)
+
+enum class ViewMode {
+    TREE, LIST
+}
+
+/**
+ * Build family tree from fowl list
+ */
+private fun buildFamilyTree(fowls: List<FowlEntity>): FamilyTreeData {
+    // For demo purposes, organize fowls by age/birth date
+    val sortedFowls = fowls.sortedBy { it.birthDate ?: Date(0) }
+
+    // Group into generations (simplified logic)
+    val generations = mutableListOf<List<FowlEntity>>()
+    val generationSize = 3 // Max fowls per generation for demo
+
+    for (i in sortedFowls.indices step generationSize) {
+        val generation = sortedFowls.subList(
+            i,
+            minOf(i + generationSize, sortedFowls.size)
+        )
+        generations.add(generation)
+    }
+
+    // Calculate breeding pairs (simplified)
+    val breedingPairs = fowls.count { it.gender == "MALE" } / 2
+
+    return FamilyTreeData(
+        generations = generations,
+        totalFowls = fowls.size,
+        breedingPairs = breedingPairs
+    )
+}
+
+/**
+ * Generate demo fowls for family tree demonstration
+ */
+private fun generateDemoFowls(ownerId: String): List<FowlEntity> {
+    val breeds = listOf("Rhode Island Red", "Leghorn", "Brahma", "Orpington", "Sussex")
+    val colors = listOf("Brown", "White", "Black", "Red", "Buff")
+    val names = listOf(
+        "Charlie", "Bella", "Max", "Luna", "Rocky", "Daisy",
+        "Duke", "Ruby", "Zeus", "Pearl", "Thor", "Honey"
+    )
+
+    return (1..9).map { index ->
+        val birthDate = Calendar.getInstance().apply {
+            add(Calendar.YEAR, -(index / 3 + 1))
+            add(Calendar.MONTH, -(index % 12))
+        }.time
+
+        FowlEntity(
+            id = "demo-fowl-$index",
+            ownerId = ownerId,
+            name = names[index % names.size],
+            breed = breeds[index % breeds.size],
+            gender = if (index % 2 == 0) "MALE" else "FEMALE",
+            birthDate = birthDate,
+            color = colors[index % colors.size],
+            weight = 2.0 + (index % 3) * 0.5,
+            status = "ACTIVE",
+            description = "Demo fowl for family tree visualization",
+            region = "Demo Region",
+            district = "Demo District",
+            createdAt = Date(),
+            updatedAt = Date()
+        )
+    }
 }

@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions';
 /**
  * Marketplace notification triggers for RIO platform
  * Handles listing updates, price alerts, and purchase notifications
@@ -6,17 +5,17 @@ import * as functions from 'firebase-functions';
 /**
  * Trigger when new marketplace listing is created
  */
-export declare const onNewMarketplaceListing: functions.CloudFunction<functions.firestore.QueryDocumentSnapshot>;
+export declare const onNewMarketplaceListing: any;
 /**
  * Trigger when listing price is updated
  */
-export declare const onListingPriceUpdate: functions.CloudFunction<functions.Change<functions.firestore.QueryDocumentSnapshot>>;
+export declare const onListingPriceUpdate: any;
 /**
  * Trigger when listing is about to expire
  */
-export declare const checkExpiringListings: functions.CloudFunction<unknown>;
+export declare const checkExpiringListings: any;
 /**
  * Send purchase confirmation notification
  */
-export declare const sendPurchaseConfirmation: functions.HttpsFunction & functions.Runnable<any>;
+export declare const sendPurchaseConfirmation: any;
 //# sourceMappingURL=marketplaceNotifications.d.ts.map

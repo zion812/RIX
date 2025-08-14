@@ -1,22 +1,21 @@
-import * as functions from 'firebase-functions';
 /**
  * Razorpay webhook handler for payment events
  */
-export declare const razorpayWebhook: functions.HttpsFunction;
+export declare const razorpayWebhook: any;
 /**
  * Create UPI payment link for coin purchase
  */
-export declare const createUPIPaymentLink: functions.HttpsFunction & functions.Runnable<any>;
+export declare const createUPIPaymentLink: any;
 /**
  * Process Google Pay payment
  */
-export declare const processGooglePayPayment: functions.HttpsFunction & functions.Runnable<any>;
+export declare const processGooglePayPayment: any;
 /**
  * Create refund for coin purchase
  */
-export declare const createRefund: functions.HttpsFunction & functions.Runnable<any>;
+export declare const createRefund: any;
 /**
  * Get payment methods available for user
  */
-export declare const getAvailablePaymentMethods: functions.HttpsFunction & functions.Runnable<any>;
+export declare const getAvailablePaymentMethods: any;
 //# sourceMappingURL=razorpayIntegration.d.ts.map

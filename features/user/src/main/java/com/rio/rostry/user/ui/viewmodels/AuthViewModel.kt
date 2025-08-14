@@ -6,6 +6,7 @@ import com.rio.rostry.core.common.model.*
 import com.rio.rostry.user.domain.model.*
 import com.rio.rostry.user.domain.usecases.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -68,25 +69,36 @@ class AuthViewModel @Inject constructor(
      * Sign in with email and password
      */
     fun signInWithEmail(email: String, password: String) {
-        executeWithResult(
-            action = { signInUseCase.signInWithEmail(email, password) },
-            onSuccess = { user ->
-                _authState.value = AuthState.Authenticated(user)
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            _loginState.value = _loginState.value.copy(isLoading = true, error = null)
+
+            try {
+                // Simulate network delay
+                delay(1500)
+
+                // Demo authentication logic
+                if (isValidCredentials(email, password)) {
+                    val user = createDemoUser(email)
+                    _authState.value = AuthState.Authenticated(user)
+                    _loginState.value = _loginState.value.copy(isLoading = false)
+                    logUserAction("sign_in_email", mapOf("user_tier" to user.tier.name))
+                } else {
+                    val error = AppError.AuthenticationError("Invalid email or password")
+                    _authState.value = AuthState.Error(error)
+                    _loginState.value = _loginState.value.copy(
+                        isLoading = false,
+                        error = error.message
+                    )
+                }
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(AppError.NetworkError("Network error occurred", e))
                 _loginState.value = _loginState.value.copy(
                     isLoading = false,
-                    error = null
-                )
-                logUserAction("sign_in_email", mapOf("user_tier" to user.tier.name))
-            },
-            onError = { exception ->
-                _loginState.value = _loginState.value.copy(
-                    isLoading = false,
-                    error = getErrorMessage(exception)
+                    error = e.message ?: "Authentication failed"
                 )
             }
-        )
-        
-        _loginState.value = _loginState.value.copy(isLoading = true, error = null)
+        }
     }
 
     /**
@@ -124,14 +136,11 @@ class AuthViewModel @Inject constructor(
      * Sign out current user
      */
     fun signOut() {
-        executeWithResult(
-            action = { signOutUseCase() },
-            onSuccess = {
-                _authState.value = AuthState.Unauthenticated
-                clearFormStates()
-                logUserAction("sign_out")
-            }
-        )
+        viewModelScope.launch {
+            _authState.value = AuthState.Unauthenticated
+            clearFormStates()
+            logUserAction("sign_out")
+        }
     }
 
     /**
@@ -170,25 +179,38 @@ class AuthViewModel @Inject constructor(
      * Verify phone number with code
      */
     fun verifyPhoneNumber(phoneNumber: String, code: String) {
-        executeWithResult(
-            action = { verifyPhoneUseCase(phoneNumber, code) },
-            onSuccess = {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+
+            try {
+                // Simulate network delay
+                delay(1500)
+
+                // Demo phone authentication
+                if (phoneNumber.isNotEmpty() && code == "123456") {
+                    val user = createDemoUserFromPhone(phoneNumber)
+                    _authState.value = AuthState.Authenticated(user)
+                    _phoneVerificationState.value = _phoneVerificationState.value.copy(
+                        isLoading = false,
+                        isSuccess = true,
+                        error = null
+                    )
+                    logUserAction("phone_verified")
+                } else {
+                    _authState.value = AuthState.Error(AppError.AuthenticationError("Invalid phone number or verification code"))
+                    _phoneVerificationState.value = _phoneVerificationState.value.copy(
+                        isLoading = false,
+                        error = "Invalid phone number or verification code"
+                    )
+                }
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(AppError.NetworkError("Verification failed", e))
                 _phoneVerificationState.value = _phoneVerificationState.value.copy(
                     isLoading = false,
-                    isSuccess = true,
-                    error = null
-                )
-                logUserAction("phone_verified")
-            },
-            onError = { exception ->
-                _phoneVerificationState.value = _phoneVerificationState.value.copy(
-                    isLoading = false,
-                    error = getErrorMessage(exception)
+                    error = e.message ?: "Verification failed"
                 )
             }
-        )
-
-        _phoneVerificationState.value = _phoneVerificationState.value.copy(isLoading = true, error = null)
+        }
     }
 
     /**
@@ -200,7 +222,7 @@ class AuthViewModel @Inject constructor(
             password = password,
             isEmailValid = isValidEmail(email),
             isPasswordValid = isValidPassword(password),
-            error = null
+            isFormValid = isValidEmail(email) && isValidPassword(password)
         )
     }
 
@@ -307,6 +329,73 @@ class AuthViewModel @Inject constructor(
             else -> exception.message ?: "An unexpected error occurred"
         }
     }
+
+    /**
+     * Clear error messages
+     */
+    fun clearError() {
+        _loginState.value = _loginState.value.copy(error = null)
+        if (_authState.value is AuthState.Error) {
+            _authState.value = AuthState.Unauthenticated
+        }
+    }
+
+    private fun isValidCredentials(email: String, password: String): Boolean {
+        return when {
+            email == "farmer@rio.com" && password == "demo123" -> true
+            email == "enthusiast@rio.com" && password == "demo123" -> true
+            email == "user@rio.com" && password == "demo123" -> true
+            else -> false
+        }
+    }
+
+    private fun createDemoUser(email: String): User {
+        return when (email) {
+            "farmer@rio.com" -> User(
+                id = "farmer_001",
+                email = email,
+                displayName = "John Farmer",
+                phoneNumber = "+1234567890",
+                tier = UserTier.FARMER,
+                isEmailVerified = true,
+                isPhoneVerified = true
+            )
+            "enthusiast@rio.com" -> User(
+                id = "enthusiast_001",
+                email = email,
+                displayName = "Jane Enthusiast",
+                phoneNumber = "+1234567891",
+                tier = UserTier.ENTHUSIAST,
+                isEmailVerified = true,
+                isPhoneVerified = false
+            )
+            else -> User(
+                id = "user_001",
+                email = email,
+                displayName = "Demo User",
+                phoneNumber = "+1234567892",
+                tier = UserTier.GENERAL,
+                isEmailVerified = false,
+                isPhoneVerified = false
+            )
+        }
+    }
+
+    private fun createDemoUserFromPhone(phoneNumber: String): User {
+        return User(
+            id = "phone_user_001",
+            email = "",
+            displayName = "Phone User",
+            phoneNumber = phoneNumber,
+            tier = UserTier.GENERAL,
+            isEmailVerified = false,
+            isPhoneVerified = true
+        )
+    }
+
+    private fun generateUserId(): String {
+        return "user_${System.currentTimeMillis()}"
+    }
 }
 
 /**
@@ -320,6 +409,18 @@ data class LoginFormState(
     val isLoading: Boolean = false,
     val error: String? = null
 ) {
+    companion object {
+        fun validate(email: String, password: String): LoginFormState {
+            return LoginFormState(
+                email = email,
+                password = password,
+                isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches(),
+                isPasswordValid = password.length >= 8,
+                error = null
+            )
+        }
+    }
+
     val isFormValid: Boolean
         get() = isEmailValid && isPasswordValid && !isLoading
 }

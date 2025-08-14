@@ -342,8 +342,14 @@ export const demoWebhookEndpoint = functions
       const body = JSON.stringify(req.body);
       
       // Verify webhook signature
+      const secret = (functions.config().demo && functions.config().demo.webhook_secret) || '';
+      if (!secret) {
+        console.error('Demo webhook secret not configured (demo.webhook_secret)');
+        res.status(500).send('Server not configured');
+        return;
+      }
       const expectedSignature = crypto
-        .createHmac('sha256', 'demo_webhook_secret')
+        .createHmac('sha256', secret)
         .update(body)
         .digest('hex');
       

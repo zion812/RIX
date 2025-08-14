@@ -1,9 +1,0 @@
-C:\Users\rowdy\AndroidStudioProjects\RIO\core\data\src\main\java\com\rio\rostry\core\data\repository\TransferRepositoryImpl.kt
-C:\Users\rowdy\AndroidStudioProjects\RIO\core\data\src\main\java\com\rio\rostry\core\data\di\DataModule.kt
-C:\Users\rowdy\AndroidStudioProjects\RIO\core\data\src\main\java\com\rio\rostry\core\data\repository\BaseOfflineRepository.kt
-C:\Users\rowdy\AndroidStudioProjects\RIO\core\data\src\main\java\com\rio\rostry\core\data\service\UserValidationService.kt
-C:\Users\rowdy\AndroidStudioProjects\RIO\core\data\src\main\java\com\rio\rostry\core\data\repository\FowlRepositoryImpl.kt
-C:\Users\rowdy\AndroidStudioProjects\RIO\core\data\src\main\java\com\rio\rostry\core\data\repository\MarketplaceRepositoryImpl.kt
-C:\Users\rowdy\AndroidStudioProjects\RIO\core\data\src\main\java\com\rio\rostry\core\data\repository\CoinRepositoryImpl.kt
-C:\Users\rowdy\AndroidStudioProjects\RIO\core\data\src\main\java\com\rio\rostry\core\data\sync\SyncManager.kt
-C:\Users\rowdy\AndroidStudioProjects\RIO\core\data\src\main\java\com\rio\rostry\core\data\repository\MediaRepositoryImpl.kt

@@ -94,9 +94,10 @@ export const DEMO_CONFIG = {
     }
   },
   
-  // Webhook Configuration
+  // Webhook Configuration (read from functions config; no hardcoded secrets)
   WEBHOOK: {
-    secret: 'demo_webhook_secret_key_2024',
+    // Set via: firebase functions:config:set demo.webhook_secret="<secret>"
+    secret: (functions.config().demo && functions.config().demo.webhook_secret) || 'rotate_me_immediately',
     events: [
       'payment.captured',
       'payment.failed',
@@ -109,12 +110,13 @@ export const DEMO_CONFIG = {
     retryDelay: 5000 // 5 seconds
   },
   
-  // Security Settings
+  // Security Settings (keys must be configured; placeholders are non-production)
   SECURITY: {
     maxRetryAttempts: 3,
     lockoutDuration: 300000, // 5 minutes
     sessionTimeout: 900000,  // 15 minutes
-    encryptionKey: 'demo_encryption_key_2024'
+    // Set via: firebase functions:config:set demo.encryption_key="<key>"
+    encryptionKey: (functions.config().demo && functions.config().demo.encryption_key) || 'rotate_me_immediately'
   },
   
   // Monitoring and Analytics

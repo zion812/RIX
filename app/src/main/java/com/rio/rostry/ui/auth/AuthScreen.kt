@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rio.rostry.auth.FirebaseAuthManager
 import com.rio.rostry.auth.UserTier
@@ -17,9 +18,10 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
-    authManager: FirebaseAuthManager = FirebaseAuthManager.getInstance(),
+    viewModel: AuthViewModel = hiltViewModel(),
     onAuthSuccess: () -> Unit = {}
 ) {
+    val authManager = viewModel.authManager
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isSignUp by remember { mutableStateOf(false) }

@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    id("kotlin-kapt")
+    id("org.jetbrains.kotlin.kapt")
+    // id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -41,7 +42,7 @@ dependencies {
     // Room
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
-    // kapt("androidx.room:room-compiler:2.6.1") // Temporarily disabled for debugging
+    "kapt"(libs.androidx.room.compiler)
 
     // JSON processing
     implementation("com.google.code.gson:gson:2.10.1")
@@ -51,6 +52,9 @@ dependencies {
     
     // Dependency Injection
     implementation("javax.inject:javax.inject:1")
+    // Hilt disabled in this module to simplify compilation
+    // implementation(libs.hilt.android)
+    // kapt(libs.hilt.compiler)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -1,0 +1,276 @@
+package com.rio.rostry.ui.demo
+
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.rio.rostry.ui.payment.DemoPaymentTestActivity
+import com.rio.rostry.ui.theme.RIOTheme
+import dagger.hilt.android.AndroidEntryPoint
+
+/**
+ * Demo Launcher Activity - Entry point for testing RIO features
+ * Provides easy access to all demo functionalities
+ */
+@AndroidEntryPoint
+class DemoLauncherActivity : ComponentActivity() {
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        setContent {
+            RIOTheme {
+                DemoLauncherScreen()
+            }
+        }
+    }
+
+    companion object {
+        fun createIntent(context: Context): Intent {
+            return Intent(context, DemoLauncherActivity::class.java)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DemoLauncherScreen() {
+    val context = LocalContext.current
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        "RIO Demo Center",
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Welcome Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.Rocket,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Welcome to RIO Demo Center",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Test all RIO platform features in a safe demo environment",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            // Demo Features Section
+            Text(
+                "Demo Features",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+
+            // Payment System Demo
+            DemoFeatureCard(
+                title = "Payment System Demo",
+                description = "Test coin purchases with simulated payment gateways including UPI, Google Pay, Cards, and more",
+                icon = Icons.Default.Payment,
+                buttonText = "Test Payments",
+                onClick = {
+                    val intent = DemoPaymentTestActivity.createIntent(context)
+                    context.startActivity(intent)
+                }
+            )
+
+            // Marketplace Demo
+            DemoFeatureCard(
+                title = "Marketplace Demo",
+                description = "Browse and test marketplace features including fowl listings, search, and transactions",
+                icon = Icons.Default.Store,
+                buttonText = "Browse Marketplace",
+                onClick = {
+                    // TODO: Add marketplace demo activity
+                }
+            )
+
+            // Family Tree Demo
+            DemoFeatureCard(
+                title = "Family Tree Demo",
+                description = "Explore interactive family tree visualization with sample fowl data",
+                icon = Icons.Default.AccountTree,
+                buttonText = "View Family Tree",
+                onClick = {
+                    // TODO: Add family tree demo activity
+                }
+            )
+
+            // Offline Sync Demo
+            DemoFeatureCard(
+                title = "Offline Sync Demo",
+                description = "Test offline capabilities and data synchronization features",
+                icon = Icons.Default.CloudOff,
+                buttonText = "Test Offline Mode",
+                onClick = {
+                    // TODO: Add offline sync demo
+                }
+            )
+
+            // User Management Demo
+            DemoFeatureCard(
+                title = "User Management Demo",
+                description = "Test user registration, tier upgrades, and profile management",
+                icon = Icons.Default.Person,
+                buttonText = "Manage Users",
+                onClick = {
+                    // TODO: Add user management demo
+                }
+            )
+
+            // Analytics Demo
+            DemoFeatureCard(
+                title = "Analytics Demo",
+                description = "View sample analytics and reporting features",
+                icon = Icons.Default.Analytics,
+                buttonText = "View Analytics",
+                onClick = {
+                    // TODO: Add analytics demo
+                }
+            )
+
+            // Demo Info
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Demo Information",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "• All transactions are simulated and no real money is involved\n" +
+                        "• Demo data is separate from production data\n" +
+                        "• Features may have simplified functionality for testing\n" +
+                        "• Reset demo data anytime from settings",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DemoFeatureCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    buttonText: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(buttonText)
+            }
+        }
+    }
+}

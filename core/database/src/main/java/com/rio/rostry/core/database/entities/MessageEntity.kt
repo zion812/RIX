@@ -1,54 +1,7 @@
 package com.rio.rostry.core.database.entities
 
 import androidx.room.*
-import java.util.*
 
-/**
- * Room entity for messages with offline-first capabilities
- * Mirrors the Firestore messages collection structure
- */
-@Entity(
-    tableName = "messages",
-    indices = [
-        Index(value = ["conversation_id"]),
-        Index(value = ["sender_id"]),
-        Index(value = ["message_type"]),
-        Index(value = ["sent_at"]),
-        Index(value = ["sync_status"]),
-        Index(value = ["delivery_status"]),
-        Index(value = ["is_deleted"])
-    ],
-    foreignKeys = [
-        ForeignKey(
-            entity = ConversationEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["conversation_id"],
-            onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = UserEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["sender_id"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ]
-)
-data class MessageEntity(
-    @PrimaryKey
-    @ColumnInfo(name = "id")
-    override val id: String,
-    
-    @ColumnInfo(name = "conversation_id")
-    val conversationId: String,
-    
-    @ColumnInfo(name = "sender_id")
-    val senderId: String,
-    
-    @ColumnInfo(name = "message_type")
-    val messageType: String, // TEXT, IMAGE, VIDEO, AUDIO, FILE, LOCATION, FOWL_CARD, LISTING_CARD, CONTACT, SYSTEM
-    
-    // Message content based on type
-    @ColumnInfo(name = "text_content")
     val textContent: String? = null,
     
     @ColumnInfo(name = "media_url")

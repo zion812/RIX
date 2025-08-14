@@ -1,8 +1,10 @@
 # RIO Offline-First Data Synchronization System - Implementation Summary
 
+> **Status**: Basic sync available via SyncWorker (app); Advanced core:sync planned
+
 ## 🎯 **Overview**
 
-Comprehensive offline-first data synchronization system for the RIO Android application, designed specifically for rural India's challenging network conditions. Supports 600K+ users across Andhra Pradesh and Telangana with seamless offline functionality and intelligent sync strategies.
+Basic offline-first data synchronization system for the RIO Android application, designed specifically for rural India's challenging network conditions. Current implementation provides foundational sync capabilities with plans for comprehensive sync module integration.
 
 ## 📊 **Success Criteria Achievement**
 

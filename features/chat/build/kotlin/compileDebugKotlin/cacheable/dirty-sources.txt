@@ -1,0 +1,2 @@
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\chat\src\main\java\com\rio\rostry\chat\ui\viewmodels\ChatViewModel.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\chat\src\main\java\com\rio\rostry\chat\domain\model\Chat.kt

@@ -5,6 +5,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.rio.rostry.core.database.entities.*
 import com.rio.rostry.core.database.dao.*
+import com.rio.rostry.core.database.converters.*
 import java.util.*
 
 /**
@@ -46,7 +47,15 @@ import java.util.*
     version = 3,
     exportSchema = false
 )
-@TypeConverters(SyncTypeConverters::class)
+@TypeConverters(
+    DateConverter::class,
+    SyncMetadataConverter::class,
+    TransactionStatusConverter::class,
+    TransactionTypeConverter::class,
+    SyncStatusConverter::class,
+    SyncPriorityConverter::class,
+    StringListConverter::class
+)
 abstract class RIOLocalDatabase : RoomDatabase() {
 
     // Core DAOs

@@ -5,11 +5,18 @@ import * as crypto from 'crypto';
 
 const db = admin.firestore();
 
-// Initialize Razorpay with demo credentials
-const razorpay = new Razorpay({
-  key_id: functions.config().razorpay.key_id || 'rzp_test_demo_key',
-  key_secret: functions.config().razorpay.key_secret || 'demo_secret_key',
-});
+// Initialize Razorpay with configuration-only credentials (no hardcoded fallbacks)
+function getRazorpayClient(): Razorpay {
+  const keyId = functions.config().razorpay?.key_id;
+  const keySecret = functions.config().razorpay?.key_secret;
+  if (!keyId || !keySecret) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Razorpay credentials are not configured. Set functions config: razorpay.key_id and razorpay.key_secret.'
+    );
+  }
+  return new Razorpay({ key_id: keyId, key_secret: keySecret });
+}
 
 const REGION = 'asia-south1';
 
@@ -127,7 +134,7 @@ export const createUPIPaymentLink = functions
         callback_method: 'get'
       };
 
-      const paymentLink = await razorpay.paymentLink.create(paymentLinkOptions);
+      const paymentLink = await getRazorpayClient().paymentLink.create(paymentLinkOptions);
 
       // Update order with payment link
       await db.collection('coin_orders').doc(orderId).update({
@@ -176,7 +183,7 @@ export const processGooglePayPayment = functions
         throw new functions.https.HttpsError('permission-denied', 'Order does not belong to user');
       }
 
-      // Process Google Pay payment through Razorpay
+      // Process Google Pay payment through Razorpay (simulated for demo; client SDK handles real flow)
       // Note: Razorpay payments.create is not available in the SDK
       // This would typically be handled by the client-side SDK
       const payment = {
@@ -256,7 +263,7 @@ export const createRefund = functions
         }
       };
 
-      const refund = await razorpay.payments.refund(orderData.paymentId, refundOptions);
+      const refund = await getRazorpayClient().payments.refund(orderData.paymentId, refundOptions);
 
       // Deduct coins from user account
       await deductCoinsFromUser(userId, orderData.totalCoins, orderId);
@@ -477,11 +484,15 @@ async function handleRefundProcessed(refund: any): Promise<void> {
  * Helper functions
  */
 function verifyWebhookSignature(body: string, signature: string): boolean {
+  const webhookSecret = functions.config().razorpay?.webhook_secret;
+  if (!webhookSecret) {
+    console.error('Razorpay webhook_secret not configured');
+    return false;
+  }
   const expectedSignature = crypto
-    .createHmac('sha256', functions.config().razorpay.webhook_secret || 'demo_webhook_secret')
+    .createHmac('sha256', webhookSecret)
     .update(body)
     .digest('hex');
-  
   return `sha256=${expectedSignature}` === signature;
 }
 

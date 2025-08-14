@@ -1,0 +1,231 @@
+package com.rio.rostry.ui.fowl
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+
+/**
+ * Fowl Management Screen
+ * Allows users to register, view, and manage their fowl
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FowlManagementScreen(
+    navController: NavController
+) {
+    var showAddDialog by remember { mutableStateOf(false) }
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("My Fowl") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { /* TODO: Search */ }) {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    }
+                    IconButton(onClick = { /* TODO: Filter */ }) {
+                        Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddDialog = true }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Fowl")
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Quick stats
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    QuickStat(label = "Total", value = "0")
+                    QuickStat(label = "Male", value = "0")
+                    QuickStat(label = "Female", value = "0")
+                    QuickStat(label = "Listed", value = "0")
+                }
+            }
+            
+            // Fowl list
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    EmptyStateCard(
+                        onAddClick = { showAddDialog = true }
+                    )
+                }
+            }
+        }
+    }
+    
+    // Add fowl dialog
+    if (showAddDialog) {
+        AddFowlDialog(
+            onDismiss = { showAddDialog = false },
+            onConfirm = { 
+                // TODO: Implement fowl registration
+                showAddDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun QuickStat(label: String, value: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun EmptyStateCard(onAddClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.Pets,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "No fowl registered yet",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Start building your fowl registry by adding your first bird",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onAddClick) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Register First Fowl")
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddFowlDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var breed by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf("") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Register New Fowl") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name (Optional)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                OutlinedTextField(
+                    value = breed,
+                    onValueChange = { breed = it },
+                    label = { Text("Breed") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                // Gender selection
+                Text(
+                    text = "Gender",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = gender == "Male",
+                        onClick = { gender = "Male" },
+                        label = { Text("Male") }
+                    )
+                    FilterChip(
+                        selected = gender == "Female",
+                        onClick = { gender = "Female" },
+                        label = { Text("Female") }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = breed.isNotBlank() && gender.isNotBlank()
+            ) {
+                Text("Register")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}

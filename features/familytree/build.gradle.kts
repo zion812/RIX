@@ -53,9 +53,9 @@ dependencies {
     // Navigation
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    
-    // Custom Drawing
-    implementation("androidx.compose.ui:ui-graphics:1.5.4")
+
+    // Custom Drawing (version via Compose BOM)
+    implementation(libs.androidx.ui.graphics)
     
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")

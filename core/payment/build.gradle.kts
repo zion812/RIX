@@ -1,25 +1,30 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.jetbrains.kotlin.android)
-    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    id("org.jetbrains.kotlin.kapt")
     alias(libs.plugins.hilt.android)
-    alias(libs.plugins.kotlin.serialization)
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
     namespace = "com.rio.rostry.core.payment"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24
-        targetSdk = 34
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
-        
-        // Razorpay configuration
-        buildConfigField("String", "RAZORPAY_KEY_ID", "\"rzp_test_demo_key_id\"")
-        buildConfigField("String", "RAZORPAY_KEY_SECRET", "\"rzp_test_demo_key_secret\"")
+
+        // Razorpay configuration (keys via gradle properties or env; empty fallback)
+        val keyId =
+            project.findProperty("RAZORPAY_KEY_ID") as String? ?: System.getenv("RAZORPAY_KEY_ID")
+            ?: ""
+        val keySecret = project.findProperty("RAZORPAY_KEY_SECRET") as String?
+            ?: System.getenv("RAZORPAY_KEY_SECRET") ?: ""
+        buildConfigField("String", "RAZORPAY_KEY_ID", "\"$keyId\"")
+        buildConfigField("String", "RAZORPAY_KEY_SECRET", "\"$keySecret\"")
         buildConfigField("String", "DEMO_GATEWAY_URL", "\"https://demo-payment.rio-app.com\"")
         buildConfigField("boolean", "ENABLE_DEMO_GATEWAY", "true")
     }
@@ -38,25 +43,23 @@ android {
             )
             buildConfigField("boolean", "DEBUG_MODE", "false")
             buildConfigField("String", "ENVIRONMENT", "\"production\"")
+            // Disable demo gateway in release
+            buildConfigField("boolean", "ENABLE_DEMO_GATEWAY", "false")
         }
     }
     
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
     
     buildFeatures {
         buildConfig = true
         compose = true
-    }
-    
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.4"
     }
     
     packaging {
@@ -75,15 +78,16 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    
+
     // Firebase
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.functions.ktx)
-    
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.functions)
+
     // Hilt
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
+    implementation("com.google.dagger:hilt-android:2.48")
+    kapt("com.google.dagger:hilt-compiler:2.48")
     
     // Room
     implementation(libs.androidx.room.runtime)
@@ -92,9 +96,9 @@ dependencies {
     
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
-    
-    // Razorpay SDK
-    implementation("com.razorpay:checkout:1.6.33")
+
+    // Razorpay SDK (exposed to consumers due to public API types)
+    api("com.razorpay:checkout:1.6.33")
     
     // Network
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
@@ -107,10 +111,8 @@ dependencies {
     // Crypto
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     
-    // Core modules
-    implementation(project(":core:database"))
+    // Core modules (minimal)
     implementation(project(":core:common"))
-    implementation(project(":core:network"))
     
     // Testing
     testImplementation(libs.junit)

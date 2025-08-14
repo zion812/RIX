@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="breeding_color">#FF9800</color>
+    <color name="communication_color">#9C27B0</color>
+    <color name="marketplace_color">#4CAF50</color>
+    <color name="notification_color">#FF6B35</color>
+    <color name="payment_color">#FF6B35</color>
+    <color name="system_color">#607D8B</color>
+    <color name="transfer_color">#2196F3</color>
+    <string name="action_buy_now">Buy Now</string>
+    <string name="action_chat">Chat</string>
+    <string name="action_contact">Contact</string>
+    <string name="action_dismiss">Dismiss</string>
+    <string name="action_reply">Reply</string>
+    <string name="action_view">View</string>
+    <string name="action_wallet">Wallet</string>
+    <string name="advanced_settings_title">Advanced</string>
+    <string name="breeding_channel_description">Breeding reminders and health alerts</string>
+    <string name="breeding_channel_name">Breeding &amp; Health</string>
+    <string name="communication_channel_description">New messages and chat notifications</string>
+    <string name="communication_channel_name">Messages &amp; Chat</string>
+    <string name="default_notification_body">You have a new update from RIO</string>
+    <string name="default_notification_title">RIO Update</string>
+    <string name="marketplace_channel_description">New listings, price alerts, and marketplace updates</string>
+    <string name="marketplace_channel_name">Marketplace</string>
+    <string name="notification_categories_title">Notification Categories</string>
+    <string name="notification_permission_denied">Notification permission denied. You may miss important updates.</string>
+    <string name="notification_send_failed">Failed to send notification. Please try again.</string>
+    <string name="notification_settings_title">Notification Settings</string>
+    <string name="payment_channel_description">Payment confirmations and coin transactions</string>
+    <string name="payment_channel_name">Payments &amp; Coins</string>
+    <string name="quiet_hours_title">Quiet Hours</string>
+    <string name="sound_vibration_title">Sound &amp; Vibration</string>
+    <string name="system_channel_description">App updates and system announcements</string>
+    <string name="system_channel_name">System Updates</string>
+    <string name="test_notification_body">This is a test notification from RIO. Everything is working correctly!</string>
+    <string name="test_notification_title">Test Notification</string>
+    <string name="transfer_channel_description">Rooster transfers and verification updates</string>
+    <string name="transfer_channel_name">Transfers &amp; Verification</string>
+</resources>

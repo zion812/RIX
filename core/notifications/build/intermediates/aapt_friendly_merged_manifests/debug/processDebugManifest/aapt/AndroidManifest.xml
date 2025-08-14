@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.rio.rostry.core.notifications" >
+
+    <uses-sdk android:minSdkVersion="24" />
+
+    <!-- FCM permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Notification permissions for Android 13+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+
+        <!-- FCM Service -->
+        <service
+            android:name="com.rio.rostry.core.notifications.FCMService"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Default notification icon -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+
+        <!-- Default notification color -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_color" />
+
+        <!-- Default notification channel -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="system_channel" />
+
+        <!-- Auto-init disabled (we'll initialize manually) -->
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+
+        <!-- Analytics collection disabled for notifications -->
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
+
+        <!-- Notification click receiver -->
+        <receiver
+            android:name="com.rio.rostry.core.notifications.NotificationClickReceiver"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="com.rio.rostry.NOTIFICATION_CLICK" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Boot receiver for notification restoration -->
+        <receiver
+            android:name="com.rio.rostry.core.notifications.BootReceiver"
+            android:enabled="true"
+            android:exported="false" >
+            <intent-filter android:priority="1000" >
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Work Manager for background notification processing -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="dollar_openBracket_applicationId_closeBracket.androidx-startup"
+            android:exported="false"
+            tools:node="merge" >
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup" />
+        </provider>
+    </application>
+
+</manifest>

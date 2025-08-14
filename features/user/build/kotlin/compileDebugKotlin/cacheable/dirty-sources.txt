@@ -1,0 +1,4 @@
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\user\src\main\java\com\rio\rostry\user\domain\model\User.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\user\src\main\java\com\rio\rostry\user\ui\viewmodels\AuthViewModel.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\user\src\main\java\com\rio\rostry\user\domain\repository\UserRepository.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\user\src\main\java\com\rio\rostry\user\ui\fragments\LoginFragment.kt

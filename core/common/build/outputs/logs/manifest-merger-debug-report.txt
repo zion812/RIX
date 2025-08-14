@@ -1,16 +1,16 @@
 -- Merging decision tree log ---
 manifest
-ADDED from C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest705492767909158636.xml:2:13-83
-INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest705492767909158636.xml:2:13-83
+ADDED from C:\Users\rowdy\AndroidStudioProjects\RIX\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest9262467348560690609.xml:2:13-83
+INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIX\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest9262467348560690609.xml:2:13-83
 	package
-		INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest705492767909158636.xml
+		INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIX\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest9262467348560690609.xml
 	xmlns:android
-		ADDED from C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest705492767909158636.xml:2:23-81
+		ADDED from C:\Users\rowdy\AndroidStudioProjects\RIX\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest9262467348560690609.xml:2:23-81
 uses-sdk
-INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest705492767909158636.xml reason: use-sdk injection requested
-INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest705492767909158636.xml
-INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest705492767909158636.xml
+INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIX\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest9262467348560690609.xml reason: use-sdk injection requested
+INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIX\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest9262467348560690609.xml
+INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIX\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest9262467348560690609.xml
 	android:targetSdkVersion
-		INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest705492767909158636.xml
+		INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIX\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest9262467348560690609.xml
 	android:minSdkVersion
-		INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIO\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest705492767909158636.xml
+		INJECTED from C:\Users\rowdy\AndroidStudioProjects\RIX\core\common\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest9262467348560690609.xml

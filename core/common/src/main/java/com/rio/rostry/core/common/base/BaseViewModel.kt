@@ -71,37 +71,18 @@ abstract class BaseViewModel : ViewModel() {
      * Execute a suspend function that returns a Result and handle it appropriately
      */
     protected fun <T> executeWithResult(
-        showLoading: Boolean = true,
-        action: suspend () -> Result<T>,
+        action: suspend () -> Flow<Result<T>>,
         onSuccess: (T) -> Unit = {},
-        onError: (Throwable) -> Unit = {}
+        onError: (Throwable) -> Unit = {},
+        onLoading: () -> Unit = {}
     ) {
         viewModelScope.launch(coroutineExceptionHandler) {
-            try {
-                if (showLoading) {
-                    _uiState.value = UiState.Loading
+            action().collect { result ->
+                when (result) {
+                    is Result.Loading -> onLoading()
+                    is Result.Success -> onSuccess(result.data)
+                    is Result.Error -> onError(result.exception)
                 }
-                
-                when (val result = action()) {
-                    is Result.Success -> {
-                        onSuccess(result.data)
-                        if (showLoading) {
-                            _uiState.value = UiState.Success
-                        }
-                    }
-                    is Result.Error -> {
-                        onError(result.exception)
-                        handleError(result.exception)
-                    }
-                    is Result.Loading -> {
-                        if (showLoading) {
-                            _uiState.value = UiState.Loading
-                        }
-                    }
-                }
-            } catch (exception: Exception) {
-                onError(exception)
-                handleError(exception)
             }
         }
     }
@@ -268,8 +249,8 @@ abstract class BaseViewModel : ViewModel() {
      * Log user action for analytics
      */
     protected fun logUserAction(action: String, parameters: Map<String, Any> = emptyMap()) {
-        // Implementation for analytics logging
-        // This would integrate with Firebase Analytics or other analytics services
+        // TODO: Implement analytics logging
+        println("User Action: $action, Parameters: $parameters")
     }
 
     /**

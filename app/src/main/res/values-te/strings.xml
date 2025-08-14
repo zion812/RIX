@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ROSTRY</string>
+    <string name="consent_title">సమ్మతి మరియు డేటా వినియోగం</string>
+    <string name="consent_message">మూల ఫీచర్లను అందించడానికి మేము డేటాను సేకరించి ప్రాసెస్ చేస్తున్నాము. దయచేసి సమీక్షించి కొనసాగించడానికి అంగీకరించండి. మీరు ఎప్పుడైనా సెట్టింగ్స్‌లో సమ్మతిని మార్చుకోవచ్చు.</string>
+    <string name="data_retention_agree">RBI/GDPR డేటా నిల్వ విధానానికి నేను అంగీకరిస్తున్నాను</string>
+    <string name="action_accept">అంగీకరించు</string>
+    <string name="action_decline">తిరస్కరించు</string>
+</resources>

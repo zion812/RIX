@@ -1,6 +1,5 @@
-import * as functions from 'firebase-functions';
 /**
  * Generate payment analytics report
  */
-export declare const generatePaymentAnalytics: functions.CloudFunction<unknown>;
+export declare const generatePaymentAnalytics: any;
 //# sourceMappingURL=analytics.d.ts.map

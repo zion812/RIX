@@ -1,8 +1,22 @@
-# RIO Coin-Based Payment System - Implementation Summary
+# RIO Coin-Based Payment System - Demo Implementation Summary
+
+> **Status**: Demo/Prototype — The payment module is not added to the app build. This document covers the demo flow and the steps required for production integration.
 
 ## 🎯 **Executive Overview**
 
-Successfully implemented a comprehensive coin-based payment system for the RIO rooster marketplace, optimized for rural India's payment preferences with ₹5 per coin economy and seamless integration with Indian payment gateways.
+Demo implementation of a comprehensive coin-based payment system for the RIO rooster marketplace, optimized for rural India's payment preferences with ₹5 per coin economy and seamless integration with Indian payment gateways.
+
+## 🚧 **Production Integration Checklist**
+
+### **Required Actions for Production**
+- [ ] Enable `:core:payment` module in `app/build.gradle.kts`
+- [ ] Configure production Razorpay keys (replace demo keys)
+- [ ] Set up Firebase Functions deployment
+- [ ] Configure webhook endpoints for payment verification
+- [ ] Implement proper error handling and retry mechanisms
+- [ ] Add comprehensive testing for payment flows
+- [ ] Set up monitoring and alerting for payment failures
+- [ ] Configure fraud prevention rules for production
 
 ## 💰 **Coin Economy Implementation**
 

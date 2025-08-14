@@ -1,0 +1,59 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Unit and Instrumented Tests",
+			"type": "shell",
+			"command": "./gradlew testDebugUnitTest connectedDebugAndroidTest",
+			"args": [],
+			"problemMatcher": [
+				"$junit"
+			]
+		},
+		{
+			"label": "Re-run Unit and Instrumented Tests",
+			"type": "shell",
+			"command": "./gradlew testDebugUnitTest connectedDebugAndroidTest",
+			"args": [],
+			"problemMatcher": [
+				"$junit"
+			]
+		},
+		{
+			"label": "Re-run Unit and Instrumented Tests (Auto)",
+			"type": "shell",
+			"command": "./gradlew testDebugUnitTest connectedDebugAndroidTest",
+			"args": [],
+			"problemMatcher": [
+				"$junit"
+			]
+		},
+		{
+			"label": "Re-run Unit and Instrumented Tests (After Plugin Fix)",
+			"type": "shell",
+			"command": "./gradlew testDebugUnitTest connectedDebugAndroidTest",
+			"args": [],
+			"problemMatcher": [
+				"$junit"
+			]
+		},
+		{
+			"label": "Re-run Unit and Instrumented Tests (After Dependency Fix)",
+			"type": "shell",
+			"command": "./gradlew testDebugUnitTest connectedDebugAndroidTest",
+			"args": [],
+			"problemMatcher": [
+				"$junit"
+			]
+		},
+		{
+			"label": "Re-run Unit and Instrumented Tests (After Entity Fix)",
+			"type": "shell",
+			"command": "./gradlew testDebugUnitTest connectedDebugAndroidTest",
+			"args": [],
+			"problemMatcher": [
+				"$junit"
+			]
+		}
+	]
+}

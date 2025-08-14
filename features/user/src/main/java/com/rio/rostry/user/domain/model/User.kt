@@ -4,26 +4,31 @@ import com.rio.rostry.core.common.model.*
 import java.util.*
 
 /**
- * Domain model representing a user in the RIO platform
+ * User domain model for the user feature module
  */
 data class User(
     val id: String,
     val email: String,
+    val displayName: String,
     val phoneNumber: String? = null,
-    val profile: UserProfile,
-    val tier: UserTier,
-    val permissions: UserPermissions,
-    val verificationStatus: VerificationStatus,
-    val regionalInfo: RegionalInfo,
-    val preferences: UserPreferences,
-    val stats: UserStats,
-    val limits: UserLimits,
-    val metadata: UserMetadata,
-    val createdAt: Date,
-    val lastLoginAt: Date? = null,
-    val lastActiveAt: Date? = null,
-    val updatedAt: Date
-)
+    val profileImageUrl: String? = null,
+    val tier: UserTier = UserTier.GENERAL,
+    val isEmailVerified: Boolean = false,
+    val isPhoneVerified: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis(),
+    val lastLoginAt: Long? = null,
+    val isActive: Boolean = true
+) {
+    val isVerified: Boolean
+        get() = isEmailVerified || isPhoneVerified
+        
+    val displayInitials: String
+        get() = displayName.split(" ")
+            .mapNotNull { it.firstOrNull()?.toString() }
+            .take(2)
+            .joinToString("")
+            .uppercase()
+}
 
 /**
  * User profile information

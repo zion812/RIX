@@ -12,27 +12,35 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Manages Firebase Authentication and user claims for the RIO platform
  */
-class FirebaseAuthManager private constructor() {
+@Singleton
+class FirebaseAuthManager @Inject constructor(
+    private val auth: FirebaseAuth,
+    private val functions: FirebaseFunctions
+) {
 
     companion object {
+        private const val TAG = "FirebaseAuthManager"
+
+        // Legacy singleton support for backward compatibility
         @Volatile
         private var INSTANCE: FirebaseAuthManager? = null
 
+        @Deprecated("Use Hilt injection instead")
         fun getInstance(): FirebaseAuthManager {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: FirebaseAuthManager().also { INSTANCE = it }
+                INSTANCE ?: FirebaseAuthManager(
+                    FirebaseAuth.getInstance(),
+                    FirebaseFunctions.getInstance()
+                ).also { INSTANCE = it }
             }
         }
-
-        private const val TAG = "FirebaseAuthManager"
     }
-
-    private val auth = FirebaseAuth.getInstance()
-    private val functions = FirebaseFunctions.getInstance()
 
     private val _currentUser = MutableStateFlow<FirebaseUser?>(null)
     val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
@@ -43,9 +51,14 @@ class FirebaseAuthManager private constructor() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private var authStateListener: FirebaseAuth.AuthStateListener? = null
+
     init {
-        // Listen for authentication state changes
-        auth.addAuthStateListener { firebaseAuth ->
+        // Initialize with current user if available
+        _currentUser.value = auth.currentUser
+
+        // Set up authentication state listener
+        authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             val user = firebaseAuth.currentUser
             _currentUser.value = user
 
@@ -55,6 +68,15 @@ class FirebaseAuthManager private constructor() {
                 }
             } else {
                 _userClaims.value = null
+            }
+        }
+        
+        auth.addAuthStateListener(authStateListener!!)
+        
+        // If user is already signed in, refresh claims
+        if (auth.currentUser != null) {
+            CoroutineScope(Dispatchers.IO).launch {
+                refreshUserClaims()
             }
         }
     }
@@ -231,5 +253,15 @@ class FirebaseAuthManager private constructor() {
      */
     fun isEmailVerified(): Boolean {
         return auth.currentUser?.isEmailVerified == true
+    }
+
+    /**
+     * Clean up resources to prevent memory leaks
+     */
+    fun cleanup() {
+        authStateListener?.let { listener ->
+            auth.removeAuthStateListener(listener)
+            authStateListener = null
+        }
     }
 }

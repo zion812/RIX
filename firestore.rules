@@ -19,6 +19,39 @@ service cloud.firestore {
       return request.auth.token.tier;
     }
 
+    // Schema validation for traceable listings
+    function isValidTraceableListing() {
+      let requiredFields = [
+        'breedType',
+        'age',
+        'parentIds',
+        'healthRecords',
+        'verificationStatus',
+        'lineageVerified',
+        'ownerHistory'
+      ];
+      let ageSpecificFields = request.resource.data.age > 12 ? 
+        ['breedingHistory', 'performanceMetrics'] : [];
+      let allRequired = requiredFields.concat(ageSpecificFields);
+      
+      return allRequired.every(field => 
+        request.resource.data[field] != null
+      );
+    }
+
+    // Schema validation for non-traceable listings
+    function isValidNonTraceableListing() {
+      let requiredFields = [
+        'breedType',
+        'approximateAge',
+        'currentHealth',
+        'sellerVerification'
+      ];
+      return requiredFields.every(field => 
+        request.resource.data[field] != null
+      );
+    }
+
     // ✅ Enhanced tier checking functions
     function isGeneralUser() {
       return getUserTier() == 'general';
@@ -28,16 +61,20 @@ service cloud.firestore {
       return getUserTier() in ['farmer', 'enthusiast'];
     }
 
+    function isEnthusiastTier() {
+      return getUserTier() == 'enthusiast';
+    }
+
     function isOwner(userId) {
       return getUserId() == userId;
     }
 
     function isAdmin() {
-      return getUserTier() == 'ADMIN';
+      return getUserTier() == 'admin';
     }
 
     function isModerator() {
-      return getUserTier() == 'MODERATOR';
+      return getUserTier() == 'moderator';
     }
 
     function isAdminOrModerator() {
@@ -45,15 +82,31 @@ service cloud.firestore {
     }
 
     function isFarmer() {
-      return getUserTier() == 'FARMER';
+      return getUserTier() == 'farmer';
     }
 
     function isEnthusiast() {
-      return getUserTier() == 'ENTHUSIAST';
+      return getUserTier() == 'enthusiast';
     }
 
     function isVerified() {
-      return request.auth.token.verified == true;
+      return request.auth.token.verificationStatus.emailVerified == true;
+    }
+
+    // Marketplace listing rules
+    match /databases/{database}/documents/marketplace/{listingId} {
+      allow read: if isAuthenticated();
+      allow create: if isFarmerOrHigher() 
+        && (isValidTraceableListing() || isValidNonTraceableListing())
+        && request.resource.data.sellerId == getUserId();
+      allow update: if isOwner(resource.data.sellerId)
+        && (isValidTraceableListing() || isValidNonTraceableListing())
+        && unchanged(['sellerId', 'createdAt', 'listingType']);
+      allow delete: if isOwner(resource.data.sellerId) || isAdminOrModerator();
+    }
+
+    function hasPermission(permission) {
+      return request.auth.token.permissions[permission] == true;
     }
 
     // User profiles - users can read/write their own data

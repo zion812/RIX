@@ -1,18 +1,18 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.jetbrains.kotlin.android)
-    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    id("org.jetbrains.kotlin.kapt")
     alias(libs.plugins.hilt.android)
-    alias(libs.plugins.kotlin.serialization)
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
     namespace = "com.rio.rostry.core.notifications"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24
-        targetSdk = 34
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -34,21 +34,17 @@ android {
     }
     
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
     
     buildFeatures {
         buildConfig = true
         compose = true
-    }
-    
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.4"
     }
     
     packaging {
@@ -62,21 +58,21 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    // Firebase dependencies
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.messaging.ktx)
+    implementation(libs.firebase.functions.ktx)
+    // Dagger/Hilt dependencies
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     
-    // Firebase
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.messaging.ktx)
-    implementation(libs.firebase.functions.ktx)
-    
-    // Hilt
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     
     // Room
@@ -89,18 +85,18 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     
     // Image loading
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation(libs.coil.compose)
     
     // JSON processing
     implementation("com.google.code.gson:gson:2.10.1")
     
     // Work Manager for background tasks
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation(libs.androidx.work.runtime.ktx)
     
     // Core modules
     implementation(project(":core:database"))
     implementation(project(":core:common"))
-    implementation(project(":core:network"))
+    // implementation(project(":core:network"))  // Temporarily disabled
     
     // Testing
     testImplementation(libs.junit)

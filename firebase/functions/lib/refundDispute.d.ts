@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions';
 /**
  * Comprehensive refund and dispute management system
  * Handles automatic refunds, dispute resolution, and chargeback protection
@@ -6,21 +5,21 @@ import * as functions from 'firebase-functions';
 /**
  * Create refund request
  */
-export declare const createRefundRequest: functions.HttpsFunction & functions.Runnable<any>;
+export declare const createRefundRequest: any;
 /**
  * Create dispute for marketplace transactions
  */
-export declare const createDispute: functions.HttpsFunction & functions.Runnable<any>;
+export declare const createDispute: any;
 /**
  * Process automatic refunds
  */
-export declare const processAutomaticRefunds: functions.CloudFunction<unknown>;
+export declare const processAutomaticRefunds: any;
 /**
  * Escalate unresolved disputes
  */
-export declare const escalateDisputes: functions.CloudFunction<unknown>;
+export declare const escalateDisputes: any;
 /**
  * Resolve dispute
  */
-export declare const resolveDispute: functions.HttpsFunction & functions.Runnable<any>;
+export declare const resolveDispute: any;
 //# sourceMappingURL=refundDispute.d.ts.map

@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.kapt")
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -34,8 +36,8 @@ android {
 
 dependencies {
     implementation(project(":core:common"))
-    implementation(project(":core:database"))
-    implementation(project(":core:network"))
+    implementation(project(":core:database-simple"))  // Use simplified database for Phase 3
+    // implementation(project(":core:network"))  // Temporarily disabled
     
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -51,7 +53,9 @@ dependencies {
     
     // Dependency Injection
     implementation("javax.inject:javax.inject:1")
-    
+    implementation("com.google.dagger:hilt-android:2.48")
+    kapt("com.google.dagger:hilt-compiler:2.48")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

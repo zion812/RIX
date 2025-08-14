@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions';
 /**
  * Demo Payment Gateway Configuration
  * Centralized configuration for demo payment system
@@ -145,7 +144,7 @@ export declare const DEMO_CONFIG: {
 /**
  * Get demo configuration for Firebase Functions
  */
-export declare const getDemoConfig: functions.HttpsFunction & functions.Runnable<any>;
+export declare const getDemoConfig: any;
 /**
  * Validate demo payment request
  */

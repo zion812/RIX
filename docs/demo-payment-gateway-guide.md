@@ -1,8 +1,22 @@
 # 🚀 RIO Demo Payment Gateway - Complete Implementation Guide
 
+> **Status**: Demo/Prototype — This document covers the demo flow and the steps required for production integration.
+
 ## 📋 **Overview**
 
 The RIO Demo Payment Gateway is a fully functional payment simulation system designed for testing, demonstration, and development purposes. It provides realistic payment processing with all major Indian payment methods.
+
+## 🚧 **Production Integration Checklist**
+
+### **Required Actions for Production**
+- [ ] Replace demo gateway with real payment processor (Razorpay/PayU)
+- [ ] Configure production API keys and webhook endpoints
+- [ ] Implement real payment validation and verification
+- [ ] Set up proper error handling for production scenarios
+- [ ] Configure fraud prevention and security measures
+- [ ] Add comprehensive logging and monitoring
+- [ ] Implement proper refund and dispute handling
+- [ ] Set up compliance with payment regulations (PCI DSS)
 
 ## ✨ **Key Features**
 

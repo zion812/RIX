@@ -46,55 +46,7 @@ data class FowlEntity(
     val breedSecondary: String? = null,
     
     @ColumnInfo(name = "breed_purity")
-    val breedPurity: Int = 100,
-    
-    @ColumnInfo(name = "breed_variety")
-    val breedVariety: String? = null,
-    
-    @ColumnInfo(name = "bloodline")
-    val bloodline: String? = null,
-    
-    // Basic information
-    @ColumnInfo(name = "gender")
-    val gender: String, // MALE, FEMALE, UNKNOWN
-    
-    @ColumnInfo(name = "birth_date")
-    val birthDate: Date? = null,
-    
-    @ColumnInfo(name = "age_category")
-    val ageCategory: String, // CHICK, JUVENILE, ADULT, SENIOR
-    
-    @ColumnInfo(name = "estimated_age_months")
-    val estimatedAgeMonths: Int? = null,
-    
-    // Physical traits
-    @ColumnInfo(name = "color")
-    val color: String,
-    
-    @ColumnInfo(name = "weight")
-    val weight: Double,
-    
-    @ColumnInfo(name = "height")
-    val height: Double,
-    
-    @ColumnInfo(name = "comb_type")
-    val combType: String,
-    
-    @ColumnInfo(name = "leg_color")
-    val legColor: String,
-    
-    @ColumnInfo(name = "eye_color")
-    val eyeColor: String,
-    
-    @ColumnInfo(name = "distinguishing_marks")
-    val distinguishingMarks: String? = null,
-    
-    // Lineage information
-    @ColumnInfo(name = "father_id")
-    val fatherId: String? = null,
-    
-    @ColumnInfo(name = "mother_id")
-    val motherId: String? = null,
+
     
     @ColumnInfo(name = "generation")
     val generation: Int = 1,
