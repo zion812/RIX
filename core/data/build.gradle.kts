@@ -36,7 +36,7 @@ android {
 
 dependencies {
     implementation(project(":core:common"))
-    implementation(project(":core:database-simple"))  // Use simplified database for Phase 3
+    implementation(project(":core:database"))
     // implementation(project(":core:network"))  // Temporarily disabled
     
     implementation(libs.androidx.core.ktx)

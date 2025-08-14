@@ -10,30 +10,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.rio.rostry.core.database.RIODatabase
+import com.rio.rostry.core.database.entities.FowlEntity
 import com.rio.rostry.fowl.ui.viewmodels.SimpleFowlViewModel
 
-/**
- * Simplified Fowl Management Screen - Phase 2.1
- * Works without Hilt for Kotlin 2.0 compatibility
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SimpleFowlManagementScreen(
-    navController: NavController
+    navController: NavController,
+    viewModel: SimpleFowlViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-
-    // Manual dependency injection for now
-    val database: RIODatabase = remember { RIODatabase.getDatabase(context) }
-    val viewModel: SimpleFowlViewModel = viewModel {
-        SimpleFowlViewModel(database)
-    }
+    // TODO: Replace with actual authenticated user ID
+    val ownerId = "current_user"
 
     val fowlList by viewModel.fowlList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -42,7 +33,7 @@ fun SimpleFowlManagementScreen(
 
     // Load fowls when screen starts
     LaunchedEffect(Unit) {
-        viewModel.loadFowls()
+        viewModel.loadFowls(ownerId)
     }
 
     Scaffold(
@@ -55,7 +46,7 @@ fun SimpleFowlManagementScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.loadFowls() }) {
+                    IconButton(onClick = { viewModel.loadFowls(ownerId) }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 }
@@ -118,7 +109,7 @@ fun SimpleFowlManagementScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(
-                                onClick = { viewModel.loadFowls() }
+                                onClick = { viewModel.loadFowls(ownerId) }
                             ) {
                                 Text("Retry")
                             }
@@ -139,9 +130,9 @@ fun SimpleFowlManagementScreen(
                         items(fowlList) { fowl ->
                             EnhancedFowlCard(
                                 fowl = fowl,
-                                onEdit = { /* TODO: Implement edit */ },
-                                onDelete = { viewModel.deleteFowl(fowl.id) },
-                                onViewDetails = { /* TODO: Implement details */ }
+                                onEdit = { navController.navigate("fowl_edit/${fowl.id}") },
+                                onDelete = { viewModel.deleteFowl(fowl.id, ownerId) },
+                                onViewDetails = { navController.navigate("fowl_detail/${fowl.id}") }
                             )
                         }
                         
@@ -159,8 +150,8 @@ fun SimpleFowlManagementScreen(
     if (showAddDialog) {
         EnhancedAddFowlDialog(
             onDismiss = { showAddDialog = false },
-            onConfirm = { name, breed, weight, region, district ->
-                viewModel.addFowl(name, breed, weight, region, district)
+            onConfirm = { name, breed, region, district ->
+                viewModel.addFowl(ownerId, name, breed, region, district)
                 showAddDialog = false
             }
         )
@@ -267,7 +258,7 @@ private fun EnhancedEmptyState(onAddFowl: () -> Unit) {
 
 @Composable
 private fun EnhancedFowlCard(
-    fowl: com.rio.rostry.core.database.entities.FowlEntity,
+    fowl: FowlEntity,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onViewDetails: () -> Unit
@@ -291,17 +282,10 @@ private fun EnhancedFowlCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${fowl.breed} • ${fowl.gender}",
+                        text = "${fowl.breedPrimary} • ${fowl.healthStatus}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    fowl.weight?.let { weight ->
-                        Text(
-                            text = "Weight: $weight kg",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                     Text(
                         text = "Location: ${fowl.region}, ${fowl.district}",
                         style = MaterialTheme.typography.bodySmall,
@@ -323,11 +307,11 @@ private fun EnhancedFowlCard(
                 }
             }
 
-            fowl.description?.let { description ->
-                if (description.isNotBlank()) {
+            fowl.notes?.let { notes ->
+                if (notes.isNotBlank()) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = description,
+                        text = notes,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2
@@ -341,11 +325,10 @@ private fun EnhancedFowlCard(
 @Composable
 private fun EnhancedAddFowlDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String, Float, String, String) -> Unit
+    onConfirm: (String, String, String, String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var breed by remember { mutableStateOf("") }
-    var weight by remember { mutableStateOf("") }
     var region by remember { mutableStateOf("") }
     var district by remember { mutableStateOf("") }
 
@@ -371,14 +354,7 @@ private fun EnhancedAddFowlDialog(
                 OutlinedTextField(
                     value = breed,
                     onValueChange = { breed = it },
-                    label = { Text("Breed *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Default.Star, contentDescription = null) }
-                )
-                OutlinedTextField(
-                    value = weight,
-                    onValueChange = { weight = it },
-                    label = { Text("Weight (kg)") },
+                    label = { Text("Primary Breed *") },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(Icons.Default.Star, contentDescription = null) }
                 )
@@ -403,9 +379,8 @@ private fun EnhancedAddFowlDialog(
                 onClick = {
                     if (breed.isNotBlank() && region.isNotBlank() && district.isNotBlank()) {
                         onConfirm(
-                            name.takeIf { it.isNotBlank() } ?: "",
+                            name,
                             breed,
-                            weight.toFloatOrNull() ?: 0f,
                             region,
                             district
                         )
