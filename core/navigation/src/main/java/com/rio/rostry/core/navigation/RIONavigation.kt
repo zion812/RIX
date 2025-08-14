@@ -14,6 +14,8 @@ import com.rio.rostry.auth.FirebaseAuthManager
 import com.rio.rostry.fowl.ui.FowlDetailScreen
 import com.rio.rostry.fowl.ui.FowlEditScreen
 import com.rio.rostry.fowl.ui.SimpleFowlManagementScreen
+import com.rio.rostry.marketplace.ui.CreateListingScreen
+import com.rio.rostry.marketplace.ui.MarketplaceScreen
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -76,7 +78,7 @@ class RIONavigation @Inject constructor(
                 // LoginScreen()
             }
             composable(Screen.MarketplaceBrowse.route) {
-                // MarketplaceBrowseScreen()
+                MarketplaceScreen(navController = navController)
             }
 
             // Farmer routes
@@ -110,7 +112,7 @@ class RIONavigation @Inject constructor(
             }
             composable(Screen.MarketplaceCreate.route) {
                 CheckUserRole(requiredRole = "farmer") {
-                    // MarketplaceCreateScreen()
+                    CreateListingScreen(navController = navController)
                 }
             }
 
