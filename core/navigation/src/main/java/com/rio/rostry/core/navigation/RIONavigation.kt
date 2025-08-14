@@ -11,6 +11,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.rio.rostry.auth.FirebaseAuthManager
+import com.rio.rostry.chat.ui.ChatScreen
+import com.rio.rostry.chat.ui.ConversationListScreen
 import com.rio.rostry.fowl.ui.FowlDetailScreen
 import com.rio.rostry.fowl.ui.FowlEditScreen
 import com.rio.rostry.fowl.ui.SimpleFowlManagementScreen
@@ -38,6 +40,10 @@ class RIONavigation @Inject constructor(
         }
         object FowlEdit : Screen("fowl_edit/{fowlId}") {
             fun createRoute(fowlId: String) = "fowl_edit/$fowlId"
+        }
+        object ChatConversationList : Screen("chat")
+        object ChatConversation : Screen("chat/{conversationId}") {
+            fun createRoute(conversationId: String) = "chat/$conversationId"
         }
         object FamilyTree : Screen("family_tree")
         object Analytics : Screen("analytics")
@@ -79,6 +85,16 @@ class RIONavigation @Inject constructor(
             }
             composable(Screen.MarketplaceBrowse.route) {
                 MarketplaceScreen(navController = navController)
+            }
+            composable(Screen.ChatConversationList.route) {
+                ConversationListScreen(navController = navController)
+            }
+            composable(
+                route = Screen.ChatConversation.route,
+                arguments = listOf(navArgument("conversationId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val conversationId = backStackEntry.arguments?.getString("conversationId") ?: return@composable
+                ChatScreen(conversationId = conversationId, navController = navController)
             }
 
             // Farmer routes
