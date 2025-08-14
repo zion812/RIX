@@ -100,7 +100,6 @@ dependencies {
     // Core modules - Enabled for basic functionality
     implementation(project(":core:common"))
     implementation(project(":core:analytics"))
-    implementation(project(":core:database-simple"))
     implementation(project(":core:data"))
     implementation(project(":core:notifications"))
     implementation(project(":core:database"))

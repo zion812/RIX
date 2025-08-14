@@ -6,9 +6,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.rio.rostry.auth.FirebaseAuthManager
+import com.rio.rostry.fowl.ui.FowlDetailScreen
+import com.rio.rostry.fowl.ui.FowlEditScreen
+import com.rio.rostry.fowl.ui.SimpleFowlManagementScreen
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,6 +31,12 @@ class RIONavigation @Inject constructor(
         object MarketplaceCreate : Screen("marketplace/create")
         object FowlList : Screen("fowl/list")
         object FowlCreate : Screen("fowl/create")
+        object FowlDetail : Screen("fowl_detail/{fowlId}") {
+            fun createRoute(fowlId: String) = "fowl_detail/$fowlId"
+        }
+        object FowlEdit : Screen("fowl_edit/{fowlId}") {
+            fun createRoute(fowlId: String) = "fowl_edit/$fowlId"
+        }
         object FamilyTree : Screen("family_tree")
         object Analytics : Screen("analytics")
         object Profile : Screen("profile")
@@ -71,12 +82,30 @@ class RIONavigation @Inject constructor(
             // Farmer routes
             composable(Screen.FowlList.route) {
                 CheckUserRole(requiredRole = "farmer") {
-                    // FowlListScreen()
+                    SimpleFowlManagementScreen(navController = navController)
                 }
             }
             composable(Screen.FowlCreate.route) {
                 CheckUserRole(requiredRole = "farmer") {
                     // FowlCreateScreen()
+                }
+            }
+            composable(
+                route = Screen.FowlDetail.route,
+                arguments = listOf(navArgument("fowlId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                CheckUserRole(requiredRole = "farmer") {
+                    val fowlId = backStackEntry.arguments?.getString("fowlId") ?: return@CheckUserRole
+                    FowlDetailScreen(fowlId = fowlId, navController = navController)
+                }
+            }
+            composable(
+                route = Screen.FowlEdit.route,
+                arguments = listOf(navArgument("fowlId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                CheckUserRole(requiredRole = "farmer") {
+                    val fowlId = backStackEntry.arguments?.getString("fowlId") ?: return@CheckUserRole
+                    FowlEditScreen(fowlId = fowlId, navController = navController)
                 }
             }
             composable(Screen.MarketplaceCreate.route) {

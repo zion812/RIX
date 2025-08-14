@@ -2,23 +2,21 @@ package com.rio.rostry.fowl.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rio.rostry.core.database.RIODatabase
+import com.rio.rostry.core.data.repository.FowlRepositoryImpl
 import com.rio.rostry.core.database.entities.FowlEntity
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.*
+import javax.inject.Inject
 
-/**
- * Simplified ViewModel for fowl management - Phase 2.1
- * Works without Hilt for Kotlin 2.0 compatibility
- */
-class SimpleFowlViewModel(
-    private val database: RIODatabase
+@HiltViewModel
+class SimpleFowlViewModel @Inject constructor(
+    private val fowlRepository: FowlRepositoryImpl
 ) : ViewModel() {
 
-    private val fowlDao = database.fowlDao()
     private val _fowlList = MutableStateFlow<List<FowlEntity>>(emptyList())
     val fowlList: StateFlow<List<FowlEntity>> = _fowlList.asStateFlow()
 
@@ -28,82 +26,102 @@ class SimpleFowlViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    /**
-     * Load all fowls for the current user
-     */
-    fun loadFowls() {
+    fun loadFowls(ownerId: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            
             try {
-                // For now, get fowls by owner (using demo user ID)
-                val fowls = fowlDao.getFowlsByOwner("current_user")
+                val fowls = fowlRepository.getFowlsByOwner(ownerId)
                 _fowlList.value = fowls
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load fowls"
+                _error.value = "Failed to load fowls: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    /**
-     * Add a new fowl
-     */
     fun addFowl(
+        ownerId: String,
         name: String,
         breed: String,
-        weight: Float,
         region: String,
         district: String
     ) {
         viewModelScope.launch {
             try {
-                val fowlEntity = FowlEntity(
+                val newFowl = FowlEntity(
                     id = UUID.randomUUID().toString(),
-                    ownerId = "current_user", // TODO: Get from auth
-                    name = name.takeIf { it.isNotBlank() } ?: "",
-                    breed = breed,
-                    gender = "UNKNOWN", // Default for now
-                    weight = if (weight > 0) weight.toDouble() else null,
-                    color = null,
-                    description = null,
+                    ownerId = ownerId,
+                    name = name,
+                    breedPrimary = breed,
+                    healthStatus = "GOOD",
+                    availabilityStatus = "AVAILABLE",
                     region = region,
                     district = district,
-                    createdAt = java.util.Date()
+                    createdAt = Date(),
+                    updatedAt = Date()
+                    // Other fields will use their default values from the data class
                 )
-
-                fowlDao.insertFowl(fowlEntity)
-
+                fowlRepository.saveFowl(newFowl).getOrThrow()
                 // Refresh the list
-                loadFowls()
+                loadFowls(ownerId)
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to add fowl"
+                _error.value = "Failed to add fowl: ${e.message}"
             }
         }
     }
 
-    /**
-     * Delete a fowl
-     */
-    fun deleteFowl(fowlId: String) {
+    fun deleteFowl(fowlId: String, ownerId: String) {
         viewModelScope.launch {
             try {
-                fowlDao.deleteFowlById(fowlId)
-
+                fowlRepository.deleteFowl(fowlId).getOrThrow()
                 // Refresh the list
-                loadFowls()
+                loadFowls(ownerId)
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to delete fowl"
+                _error.value = "Failed to delete fowl: ${e.message}"
             }
         }
     }
 
-    /**
-     * Clear error state
-     */
     fun clearError() {
         _error.value = null
+    }
+
+    private val _selectedFowl = MutableStateFlow<FowlEntity?>(null)
+    val selectedFowl: StateFlow<FowlEntity?> = _selectedFowl.asStateFlow()
+
+    fun getFowlById(id: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                val fowl = fowlRepository.getFowlById(id)
+                _selectedFowl.value = fowl
+                if (fowl == null) {
+                    _error.value = "Fowl not found."
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to load fowl details: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun updateFowl(updatedFowl: FowlEntity) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                fowlRepository.updateFowl(updatedFowl).getOrThrow()
+                // Also update the selected fowl state to reflect changes immediately
+                _selectedFowl.value = updatedFowl
+            } catch (e: Exception) {
+                _error.value = "Failed to update fowl: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 }
