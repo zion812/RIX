@@ -59,6 +59,12 @@ data class FowlEntity(
     
     @ColumnInfo(name = "offspring")
     val offspring: List<String> = emptyList(),
+
+    @ColumnInfo(name = "father_id")
+    val parentMaleId: String? = null,
+
+    @ColumnInfo(name = "mother_id")
+    val parentFemaleId: String? = null,
     
     // Status information
     @ColumnInfo(name = "health_status")
