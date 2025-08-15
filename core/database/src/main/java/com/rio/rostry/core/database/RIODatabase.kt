@@ -18,7 +18,8 @@ import java.util.*
         CoinTransactionEntity::class,
         UserCoinBalanceEntity::class,
         FowlEntity::class,
-    MarketplaceEntity::class,
+        BreedingRecordEntity::class,
+        MarketplaceEntity::class,
         TransferEntity::class,
         MessageEntity::class,
         NotificationEntity::class,
@@ -40,6 +41,7 @@ abstract class RIODatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun coinDao(): CoinDao
     abstract fun fowlDao(): FowlDao
+    abstract fun breedingDao(): BreedingDao
     abstract fun marketplaceDao(): MarketplaceDao
     abstract fun transferDao(): TransferDao
     abstract fun messageDao(): MessageDao
@@ -63,36 +65,6 @@ abstract class RIODatabase : RoomDatabase() {
 /**
  * Additional entities for complete functionality
  */
-
-@Entity(tableName = "fowls")
-data class FowlEntity(
-    @PrimaryKey
-    override val id: String,
-    val name: String,
-    val breed: String,
-    val ownerId: String,
-    val parentMaleId: String? = null,
-    val parentFemaleId: String? = null,
-    val birthDate: Date? = null,
-    val gender: String,
-    val color: String? = null,
-    val weight: Double? = null,
-    val height: Double? = null,
-    val description: String? = null,
-    val imageUrls: List<String> = emptyList(),
-    val videoUrls: List<String> = emptyList(),
-    val isForSale: Boolean = false,
-    val priceInCoins: Int? = null,
-    val location: String? = null,
-    val healthStatus: String = "healthy",
-    val vaccinationRecords: List<String> = emptyList(),
-    val achievements: List<String> = emptyList(),
-    val createdAt: Date,
-    val updatedAt: Date = Date(),
-    val isSynced: Boolean = false,
-    @Embedded
-    override val syncMetadata: SyncMetadata = SyncMetadata()
-) : SyncableEntity
 
 @Entity(tableName = "marketplace_listings")
 data class MarketplaceListingEntity(
