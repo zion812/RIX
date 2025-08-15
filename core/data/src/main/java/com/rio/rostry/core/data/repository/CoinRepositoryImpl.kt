@@ -282,32 +282,43 @@ class CoinRepositoryImpl @Inject constructor(
     }
     
     private suspend fun createSecureOrder(coinPackage: CoinPackage): Result<OrderData> {
+        // MOCK IMPLEMENTATION: In a real app, this would call the payment gateway's backend
+        // to create a secure order and get an order ID.
         return try {
-            // TODO: Implement actual order creation with payment gateway
-            Result.success(OrderData("order_id", "razorpay_order_id", coinPackage.priceInRupees))
+            val orderId = "mock_order_${UUID.randomUUID()}"
+            val razorpayOrderId = "mock_razorpay_${UUID.randomUUID()}"
+            Result.success(OrderData(orderId, razorpayOrderId, coinPackage.priceInRupees))
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
     private suspend fun launchPaymentGateway(
         orderData: OrderData,
         paymentMethod: PaymentMethod
     ): Result<PaymentData> {
+        // MOCK IMPLEMENTATION: In a real app, this would launch the payment gateway's SDK UI.
+        // Here, we simulate a successful payment.
         return try {
-            // TODO: Implement actual payment gateway integration
-            Result.success(PaymentData("payment_id", "success"))
+            val paymentId = "mock_payment_${UUID.randomUUID()}"
+            Result.success(PaymentData(paymentId, "success"))
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
     private suspend fun retryMarketplaceListing(transaction: CoinTransactionEntity) {
-        // TODO: Implementation for retrying marketplace listing
+        // Basic retry logic: For now, just log it.
+        // A real implementation would re-submit the transaction details.
+        android.util.Log.i("CoinRepo", "Simulating retry for marketplace transaction: ${transaction.id}")
+        // Mark as completed to remove from retry queue for this demo
+        coinDao.updateTransactionStatus(transaction.id, TransactionStatus.COMPLETED)
     }
-    
+
     private suspend fun retryPremiumFeature(transaction: CoinTransactionEntity) {
-        // TODO: Implementation for retrying premium feature
+        // Basic retry logic: For now, just log it.
+        android.util.Log.i("CoinRepo", "Simulating retry for premium feature transaction: ${transaction.id}")
+        coinDao.updateTransactionStatus(transaction.id, TransactionStatus.COMPLETED)
     }
 }
 

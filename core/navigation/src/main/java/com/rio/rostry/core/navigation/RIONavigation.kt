@@ -13,6 +13,7 @@ import androidx.navigation.navArgument
 import com.rio.rostry.auth.FirebaseAuthManager
 import com.rio.rostry.chat.ui.ChatScreen
 import com.rio.rostry.chat.ui.ConversationListScreen
+import com.rio.rostry.core.payment.ui.CoinPurchaseScreen
 import com.rio.rostry.fowl.ui.FowlDetailScreen
 import com.rio.rostry.fowl.ui.FowlEditScreen
 import com.rio.rostry.fowl.ui.SimpleFowlManagementScreen
@@ -45,6 +46,7 @@ class RIONavigation @Inject constructor(
         object ChatConversation : Screen("chat/{conversationId}") {
             fun createRoute(conversationId: String) = "chat/$conversationId"
         }
+        object CoinPurchase : Screen("coins/purchase")
         object FamilyTree : Screen("family_tree")
         object Analytics : Screen("analytics")
         object Profile : Screen("profile")
@@ -96,6 +98,11 @@ class RIONavigation @Inject constructor(
                 val conversationId = backStackEntry.arguments?.getString("conversationId") ?: return@composable
                 ChatScreen(conversationId = conversationId, navController = navController)
             }
+            composable(Screen.CoinPurchase.route) {
+                // Accessible to all authenticated users
+                CoinPurchaseScreen(navController = navController)
+            }
+
 
             // Farmer routes
             composable(Screen.FowlList.route) {
