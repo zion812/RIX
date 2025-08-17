@@ -16,7 +16,8 @@ import java.util.*
         Index(value = ["sync_status"]),
         Index(value = ["sync_priority"]),
         Index(value = ["created_at"]),
-        Index(value = ["is_deleted"])
+        Index(value = ["is_deleted"]),
+        Index(value = ["cover_thumbnail_url"])
     ],
     foreignKeys = [
         ForeignKey(
@@ -138,6 +139,7 @@ data class FowlEntity(
     val region: String = "",
     val district: String = "",
     val mandal: String? = null,
+    val coverThumbnailUrl: String? = null,
     val village: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
@@ -172,7 +174,11 @@ data class FowlEntity(
     val retryCount: Int = 0,
 
     @ColumnInfo(name = "data_size")
-    val dataSize: Long = 0L
+    val dataSize: Long = 0L,
+
+    // Cover thumbnail for list cards and profile headers
+    @ColumnInfo(name = "cover_thumbnail_url")
+    val coverThumbnailUrl: String? = null
 ) : SyncableEntity {
 
     // SyncableEntity implementation
@@ -272,7 +278,7 @@ interface FowlDao : BaseSyncableDao<FowlEntity> {
     override suspend fun deleteById(id: String): Int
     
     // Performance optimization queries
-    @Query("SELECT id, owner_id, breed_primary, gender, availability_status, primary_photo, region, district FROM fowls WHERE region = :region AND availability_status = 'AVAILABLE' AND is_deleted = 0 ORDER BY created_at DESC LIMIT :limit")
+    @Query("SELECT id, owner_id, breed_primary, gender, availability_status, primary_photo, region, district, cover_thumbnail_url FROM fowls WHERE region = :region AND availability_status = 'AVAILABLE' AND is_deleted = 0 ORDER BY created_at DESC LIMIT :limit")
     suspend fun getFowlSummariesInRegion(region: String, limit: Int = 100): List<FowlSummary>
     
     @Query("SELECT COUNT(*) FROM fowls WHERE sync_status = 'PENDING_UPLOAD' AND is_deleted = 0")
@@ -292,6 +298,7 @@ data class FowlSummary(
     val gender: String,
     @ColumnInfo(name = "availability_status") val availabilityStatus: String,
     @ColumnInfo(name = "primary_photo") val primaryPhoto: String?,
+    @ColumnInfo(name = "cover_thumbnail_url") val coverThumbnailUrl: String?,
     val region: String,
     val district: String
 )

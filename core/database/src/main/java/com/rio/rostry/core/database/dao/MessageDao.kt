@@ -9,7 +9,7 @@ import java.util.*
  * Data Access Object for message-related operations
  */
 @Dao
-interface MessageDao {
+interface MessageDaoV2 {
     
     @Query("SELECT * FROM messages WHERE id = :messageId")
     suspend fun getMessageById(messageId: String): MessageEntity?

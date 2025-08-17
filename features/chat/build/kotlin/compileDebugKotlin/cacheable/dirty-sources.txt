@@ -1,2 +1,6 @@
 C:\Users\rowdy\AndroidStudioProjects\RIX\features\chat\src\main\java\com\rio\rostry\chat\ui\viewmodels\ChatViewModel.kt
 C:\Users\rowdy\AndroidStudioProjects\RIX\features\chat\src\main\java\com\rio\rostry\chat\domain\model\Chat.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\chat\src\main\java\com\rio\rostry\chat\ui\ConversationListScreen.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\chat\src\main\java\com\rio\rostry\features\chat\ui\MessageScreen.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\chat\src\main\java\com\rio\rostry\chat\ui\ChatScreen.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\chat\src\main\java\com\rio\rostry\features\chat\viewmodel\MessageViewModel.kt

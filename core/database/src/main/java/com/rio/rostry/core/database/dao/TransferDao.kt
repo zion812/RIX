@@ -6,10 +6,10 @@ import kotlinx.coroutines.flow.Flow
 import java.util.*
 
 /**
- * Data Access Object for transfer-related operations
+ * Data Access Object for transfer operations
  */
 @Dao
-interface TransferDao {
+interface TransferDaoV2 {
     
     @Query("SELECT * FROM transfers WHERE id = :transferId")
     suspend fun getTransferById(transferId: String): TransferEntity?

@@ -2,6 +2,9 @@ package com.rio.rostry.fowl.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rio.rostry.core.data.model.FowlRecord
+import com.rio.rostry.core.data.model.FowlRecordListItem
+import com.rio.rostry.core.data.repository.FowlRecordRepository
 import com.rio.rostry.core.data.repository.FowlRepositoryImpl
 import com.rio.rostry.core.database.entities.FowlEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SimpleFowlViewModel @Inject constructor(
-    private val fowlRepository: FowlRepositoryImpl
+    private val fowlRepository: FowlRepositoryImpl,
+    private val fowlRecordRepository: FowlRecordRepository
 ) : ViewModel() {
 
     private val _fowlList = MutableStateFlow<List<FowlEntity>>(emptyList())
@@ -25,6 +29,21 @@ class SimpleFowlViewModel @Inject constructor(
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    private val _selectedFowl = MutableStateFlow<FowlEntity?>(null)
+    val selectedFowl: StateFlow<FowlEntity?> = _selectedFowl.asStateFlow()
+    
+    private val _fowlRecords = MutableStateFlow<List<FowlRecord>>(emptyList())
+    val fowlRecords: StateFlow<List<FowlRecord>> = _fowlRecords.asStateFlow()
+    
+    private val _fowlRecordListItems = MutableStateFlow<List<FowlRecordListItem>>(emptyList())
+    val fowlRecordListItems: StateFlow<List<FowlRecordListItem>> = _fowlRecordListItems.asStateFlow()
+    
+    private var currentFowlId: String? = null
+    private var currentPage = 0
+    private val pageSize = 20
+    private var allRecordsLoaded = false
+    private var useLightweightProjection = true
 
     fun loadFowls(ownerId: String) {
         viewModelScope.launch {
@@ -88,9 +107,6 @@ class SimpleFowlViewModel @Inject constructor(
         _error.value = null
     }
 
-    private val _selectedFowl = MutableStateFlow<FowlEntity?>(null)
-    val selectedFowl: StateFlow<FowlEntity?> = _selectedFowl.asStateFlow()
-
     fun getFowlById(id: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -100,6 +116,12 @@ class SimpleFowlViewModel @Inject constructor(
                 _selectedFowl.value = fowl
                 if (fowl == null) {
                     _error.value = "Fowl not found."
+                } else {
+                    // Load records for this fowl
+                    currentFowlId = id
+                    currentPage = 0
+                    allRecordsLoaded = false
+                    loadFowlRecords(id)
                 }
             } catch (e: Exception) {
                 _error.value = "Failed to load fowl details: ${e.message}"
@@ -123,5 +145,99 @@ class SimpleFowlViewModel @Inject constructor(
                 _isLoading.value = false
             }
         }
+    }
+    
+    private fun loadFowlRecords(fowlId: String) {
+        viewModelScope.launch {
+            try {
+                if (useLightweightProjection) {
+                    val result = fowlRecordRepository.getRecordListItemsByFowlIdPaged(
+                        fowlId = fowlId,
+                        limit = pageSize,
+                        offset = currentPage * pageSize
+                    )
+                    
+                    if (result is com.rio.rostry.core.common.model.Result.Success) {
+                        val records = result.data
+                        if (records.isEmpty()) {
+                            allRecordsLoaded = true
+                        } else {
+                            // Add new records to existing list
+                            val currentRecords = _fowlRecordListItems.value
+                            _fowlRecordListItems.value = currentRecords + records
+                        }
+                    } else {
+                        _error.value = "Failed to load fowl records"
+                    }
+                } else {
+                    val result = fowlRecordRepository.getRecordsByFowlIdPaged(
+                        fowlId = fowlId,
+                        limit = pageSize,
+                        offset = currentPage * pageSize
+                    )
+                    
+                    if (result is com.rio.rostry.core.common.model.Result.Success) {
+                        val records = result.data
+                        if (records.isEmpty()) {
+                            allRecordsLoaded = true
+                        } else {
+                            // Add new records to existing list
+                            val currentRecords = _fowlRecords.value
+                            _fowlRecords.value = currentRecords + records
+                        }
+                    } else {
+                        _error.value = "Failed to load fowl records"
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to load fowl records: ${e.message}"
+            }
+        }
+    }
+    
+    fun loadMoreRecords() {
+        if (allRecordsLoaded || currentFowlId == null) return
+        
+        currentPage++
+        currentFowlId?.let { loadFowlRecords(it) }
+    }
+    
+    fun addFowlRecord(record: FowlRecord) {
+        viewModelScope.launch {
+            try {
+                val result = fowlRecordRepository.addRecord(record)
+                if (result is com.rio.rostry.core.common.model.Result.Error) {
+                    _error.value = "Failed to add record: ${result.exception.message}"
+                } else {
+                    // Reload records
+                    _selectedFowl.value?.id?.let { 
+                        currentFowlId = it
+                        currentPage = 0
+                        allRecordsLoaded = false
+                        _fowlRecordListItems.value = emptyList()
+                        _fowlRecords.value = emptyList()
+                        loadFowlRecords(it)
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to add record: ${e.message}"
+            }
+        }
+    }
+    
+    fun refreshRecords() {
+        _selectedFowl.value?.id?.let {
+            currentFowlId = it
+            currentPage = 0
+            allRecordsLoaded = false
+            _fowlRecordListItems.value = emptyList()
+            _fowlRecords.value = emptyList()
+            loadFowlRecords(it)
+        }
+    }
+    
+    fun toggleProjectionMode() {
+        useLightweightProjection = !useLightweightProjection
+        refreshRecords()
     }
 }

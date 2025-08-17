@@ -14,6 +14,7 @@ import com.rio.rostry.auth.FirebaseAuthManager
 import com.rio.rostry.chat.ui.ChatScreen
 import com.rio.rostry.chat.ui.ConversationListScreen
 import com.rio.rostry.core.payment.ui.CoinPurchaseScreen
+import com.rio.rostry.fowl.ui.AddFowlRecordScreen
 import com.rio.rostry.fowl.ui.FowlDetailScreen
 import com.rio.rostry.fowl.ui.FowlEditScreen
 import com.rio.rostry.fowl.ui.SimpleFowlManagementScreen
@@ -41,6 +42,9 @@ class RIONavigation @Inject constructor(
         }
         object FowlEdit : Screen("fowl_edit/{fowlId}") {
             fun createRoute(fowlId: String) = "fowl_edit/$fowlId"
+        }
+        object FowlAddRecord : Screen("fowl_add_record/{fowlId}") {
+            fun createRoute(fowlId: String) = "fowl_add_record/$fowlId"
         }
         object ChatConversationList : Screen("chat")
         object ChatConversation : Screen("chat/{conversationId}") {
@@ -131,6 +135,15 @@ class RIONavigation @Inject constructor(
                 CheckUserRole(requiredRole = "farmer") {
                     val fowlId = backStackEntry.arguments?.getString("fowlId") ?: return@CheckUserRole
                     FowlEditScreen(fowlId = fowlId, navController = navController)
+                }
+            }
+            composable(
+                route = Screen.FowlAddRecord.route,
+                arguments = listOf(navArgument("fowlId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                CheckUserRole(requiredRole = "farmer") {
+                    val fowlId = backStackEntry.arguments?.getString("fowlId") ?: return@CheckUserRole
+                    AddFowlRecordScreen(fowlId = fowlId, navController = navController)
                 }
             }
             composable(Screen.MarketplaceCreate.route) {

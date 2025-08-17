@@ -2,7 +2,7 @@ package com.rio.rostry.core.common.base
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rio.rostry.core.common.model.UiState
+import com.rio.rostry.core.common.model.state.UiState
 import com.rio.rostry.core.common.model.UserTier
 import com.rio.rostry.core.common.model.Result
 import com.rio.rostry.core.common.utils.ErrorHandler

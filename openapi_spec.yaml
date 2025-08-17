@@ -1,0 +1,1200 @@
+openapi: 3.0.3
+info:
+  title: ROSTRY Platform API
+  description: API for the ROSTRY Platform - Rural Information eXchange for poultry farmers
+  version: 1.0.0
+
+servers:
+  - url: https://api.rostry.example.com/v1
+    description: Production server
+  - url: http://localhost:8080/v1
+    description: Development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [general, farmer, breeder, admin]
+        kyc_state:
+          type: string
+          enum: [unverified, pending, verified]
+        first_name:
+          type: string
+        last_name:
+          type: string
+        location:
+          type: object
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+            address:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - role
+        - kyc_state
+
+    Fowl:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        owner_id:
+          type: string
+          format: uuid
+        breed:
+          type: string
+        gender:
+          type: string
+          enum: [male, female]
+        date_of_birth:
+          type: string
+          format: date
+        parent_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        breeder_ready:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - owner_id
+        - breed
+        - date_of_birth
+
+    FowlRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fowl_id:
+          type: string
+          format: uuid
+        record_type:
+          type: string
+          enum: [vaccination, '5-week', '20-week', weekly, 'breeder-ready']
+        details:
+          type: object
+        proof_urls:
+          type: array
+          items:
+            type: string
+        recorded_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - fowl_id
+        - record_type
+
+    MarketListing:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fowl_id:
+          type: string
+          format: uuid
+        seller_id:
+          type: string
+          format: uuid
+        purpose:
+          type: string
+          enum: [breeding, fighting, ornamental]
+        price_cents:
+          type: integer
+        location:
+          type: object
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+            address:
+              type: string
+        status:
+          type: string
+          enum: [active, sold, closed]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - fowl_id
+        - seller_id
+        - purpose
+        - price_cents
+
+    TransferLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fowl_id:
+          type: string
+          format: uuid
+        giver_id:
+          type: string
+          format: uuid
+        receiver_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, verified, rejected]
+        verification_details:
+          type: object
+        initiated_at:
+          type: string
+          format: date-time
+        verified_at:
+          type: string
+          format: date-time
+        rejected_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - fowl_id
+        - giver_id
+        - receiver_id
+        - status
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sender_id:
+          type: string
+          format: uuid
+        receiver_id:
+          type: string
+          format: uuid
+        thread_id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        sent_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sender_id
+        - receiver_id
+        - thread_id
+        - content
+
+    CoinLedgerEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        amount:
+          type: integer
+        transaction_type:
+          type: string
+          enum: [listing, transfer_verification, maintenance, admin_credit]
+        related_entity_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - user_id
+        - amount
+        - transaction_type
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+      required:
+        - code
+        - message
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: Idempotency key to prevent duplicate requests
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                phone:
+                  type: string
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                role:
+                  type: string
+                  enum: [general, farmer, breeder]
+              required:
+                - email
+                - password
+                - role
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /me:
+    get:
+      summary: Get current user information
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /fowls:
+    post:
+      summary: Create a new fowl
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                breed:
+                  type: string
+                gender:
+                  type: string
+                  enum: [male, female]
+                date_of_birth:
+                  type: string
+                  format: date
+                parent_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+              required:
+                - breed
+                - date_of_birth
+      responses:
+        '201':
+          description: Fowl created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fowl'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List fowls with optional filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: owner_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of fowls
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fowls:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Fowl'
+                  total:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /fowls/{id}:
+    get:
+      summary: Get a specific fowl
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Fowl details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fowl'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Fowl not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /fowls/{id}/records:
+    post:
+      summary: Add a record to a fowl
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                record_type:
+                  type: string
+                  enum: [vaccination, '5-week', '20-week', weekly, 'breeder-ready']
+                details:
+                  type: object
+                proof_urls:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - record_type
+      responses:
+        '201':
+          description: Record added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FowlRecord'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Fowl not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /listings:
+    post:
+      summary: Create a new marketplace listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fowl_id:
+                  type: string
+                  format: uuid
+                purpose:
+                  type: string
+                  enum: [breeding, fighting, ornamental]
+                price_cents:
+                  type: integer
+                location:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+                    address:
+                      type: string
+              required:
+                - fowl_id
+                - purpose
+                - price_cents
+      responses:
+        '201':
+          description: Listing created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketListing'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Fowl not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List marketplace listings with filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: purpose
+          in: query
+          schema:
+            type: string
+            enum: [breeding, fighting, ornamental]
+        - name: min_price
+          in: query
+          schema:
+            type: integer
+        - name: max_price
+          in: query
+          schema:
+            type: integer
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: has_lineage
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of listings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MarketListing'
+                  total:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /listings/{id}:
+    get:
+      summary: Get a specific listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Listing details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketListing'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Listing not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      summary: Update a listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, sold, closed]
+      responses:
+        '200':
+          description: Listing updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketListing'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Listing not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transfers:
+    post:
+      summary: Initiate a fowl transfer
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fowl_id:
+                  type: string
+                  format: uuid
+                receiver_id:
+                  type: string
+                  format: uuid
+              required:
+                - fowl_id
+                - receiver_id
+      responses:
+        '201':
+          description: Transfer initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferLog'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Fowl or receiver not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transfers/{id}/verify:
+    post:
+      summary: Verify a transfer (receiver action)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                photo_keys:
+                  type: array
+                  items:
+                    type: string
+                color:
+                  type: string
+                weight_kg:
+                  type: number
+                age_weeks:
+                  type: integer
+                location:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+                    address:
+                      type: string
+                agreed_price_cents:
+                  type: integer
+              required:
+                - photo_keys
+                - color
+                - weight_kg
+                - age_weeks
+                - location
+                - agreed_price_cents
+      responses:
+        '200':
+          description: Transfer verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferLog'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Transfer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transfers/{id}/reject:
+    post:
+      summary: Reject a transfer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Transfer rejected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferLog'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Transfer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transfers/{id}:
+    get:
+      summary: Get transfer details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Transfer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferLog'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Transfer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /messages:
+    post:
+      summary: Send a message
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                receiver_id:
+                  type: string
+                  format: uuid
+                content:
+                  type: string
+                thread_id:
+                  type: string
+                  format: uuid
+              required:
+                - receiver_id
+                - content
+      responses:
+        '201':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Receiver not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List messages with a peer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: peer_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  total:
+                    type: integer
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /threads:
+    get:
+      summary: List message threads
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of threads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    thread_id:
+                      type: string
+                      format: uuid
+                    peer:
+                      $ref: '#/components/schemas/User'
+                    last_message:
+                      $ref: '#/components/schemas/Message'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /coins/balance:
+    get:
+      summary: Get user's coin balance
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User's coin balance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balance:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /coins/charge:
+    post:
+      summary: Charge or credit coins to a user (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                amount:
+                  type: integer
+                transaction_type:
+                  type: string
+                  enum: [listing, transfer_verification, maintenance, admin_credit]
+                related_entity_id:
+                  type: string
+                  format: uuid
+              required:
+                - user_id
+                - amount
+                - transaction_type
+      responses:
+        '200':
+          description: Coins charged/credited successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoinLedgerEntry'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /coins/ledger:
+    get:
+      summary: Get user's coin ledger
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: User's coin ledger
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CoinLedgerEntry'
+                  total:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+security:
+  - bearerAuth: []

@@ -1,12 +1,16 @@
 package com.rio.rostry.core.common.performance
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.telephony.TelephonyManager
-import com.rio.rostry.core.common.model.NetworkType
+import android.util.Log
+import com.rio.rostry.core.common.network.NetworkType
+import com.rio.rostry.core.common.network.ConnectionQuality
+import com.rio.rostry.core.common.network.SyncStrategy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +28,7 @@ class NetworkAwareManager @Inject constructor(
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 
-    private val _networkType = MutableStateFlow(NetworkType.UNKNOWN)
+    private val _networkType = MutableStateFlow(NetworkType.OTHER)
     val networkType: StateFlow<NetworkType> = _networkType.asStateFlow()
 
     private val _isConnected = MutableStateFlow(false)
@@ -44,7 +48,7 @@ class NetworkAwareManager @Inject constructor(
 
         override fun onLost(network: Network) {
             _isConnected.value = false
-            _networkType.value = NetworkType.UNKNOWN
+            _networkType.value = NetworkType.OTHER
             _connectionQuality.value = ConnectionQuality.UNKNOWN
         }
 
@@ -62,25 +66,58 @@ class NetworkAwareManager @Inject constructor(
      * Start monitoring network changes
      */
     private fun startNetworkMonitoring() {
-        val networkRequest = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
-        
-        connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+        if (context.checkSelfPermission(android.Manifest.permission.ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED) {
+            val networkRequest = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
+            try {
+                connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+            } catch (ex: SecurityException) {
+                Log.e(
+                    "NetworkAwareManager",
+                    "registerNetworkCallback requires ACCESS_NETWORK_STATE. Fallback to offline.",
+                    ex
+                )
+                _isConnected.value = false
+            }
+        } else {
+            Log.w(
+                "NetworkAwareManager",
+                "Missing ACCESS_NETWORK_STATE permission. Offline behavior enforced."
+            )
+            _isConnected.value = false
+        }
     }
 
     /**
      * Update network information
      */
     private fun updateNetworkInfo(networkCapabilities: NetworkCapabilities? = null) {
-        val capabilities = networkCapabilities ?: connectivityManager.getNetworkCapabilities(
-            connectivityManager.activeNetwork
-        )
-
-        if (capabilities != null) {
-            _networkType.value = determineNetworkType(capabilities)
-            _connectionQuality.value = determineConnectionQuality(capabilities)
-            _bandwidthEstimate.value = estimateBandwidth(capabilities)
+        if (context.checkSelfPermission(android.Manifest.permission.ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED) {
+            val capabilities = try {
+                networkCapabilities ?: connectivityManager.getNetworkCapabilities(
+                    connectivityManager.activeNetwork
+                )
+            } catch (ex: SecurityException) {
+                Log.e(
+                    "NetworkAwareManager",
+                    "getNetworkCapabilities requires ACCESS_NETWORK_STATE.",
+                    ex
+                )
+                null
+            }
+            if (capabilities != null) {
+                _networkType.value = determineNetworkType(capabilities)
+                _connectionQuality.value = determineConnectionQuality(capabilities)
+                _bandwidthEstimate.value = estimateBandwidth(capabilities)
+            }
+        } else {
+            Log.w(
+                "NetworkAwareManager",
+                "Missing ACCESS_NETWORK_STATE permission. Network info unavailable."
+            )
+            _networkType.value = NetworkType.OTHER
+            _connectionQuality.value = ConnectionQuality.UNKNOWN
         }
     }
 
@@ -90,20 +127,8 @@ class NetworkAwareManager @Inject constructor(
     private fun determineNetworkType(capabilities: NetworkCapabilities): NetworkType {
         return when {
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> NetworkType.WIFI
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
-                when (telephonyManager.dataNetworkType) {
-                    TelephonyManager.NETWORK_TYPE_LTE,
-                    TelephonyManager.NETWORK_TYPE_NR -> NetworkType.MOBILE_4G
-                    TelephonyManager.NETWORK_TYPE_UMTS,
-                    TelephonyManager.NETWORK_TYPE_HSDPA,
-                    TelephonyManager.NETWORK_TYPE_HSUPA,
-                    TelephonyManager.NETWORK_TYPE_HSPA -> NetworkType.MOBILE_3G
-                    TelephonyManager.NETWORK_TYPE_EDGE,
-                    TelephonyManager.NETWORK_TYPE_GPRS -> NetworkType.MOBILE_2G
-                    else -> NetworkType.MOBILE_4G // Default to 4G for unknown mobile types
-                }
-            }
-            else -> NetworkType.UNKNOWN
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetworkType.CELLULAR
+            else -> NetworkType.OTHER
         }
     }
 
@@ -193,10 +218,14 @@ class NetworkAwareManager @Inject constructor(
      */
     fun getSyncStrategy(): SyncStrategy {
         return when {
-            _networkType.value == NetworkType.WIFI -> SyncStrategy.IMMEDIATE
-            _connectionQuality.value == ConnectionQuality.EXCELLENT -> SyncStrategy.IMMEDIATE
-            _connectionQuality.value in listOf(ConnectionQuality.GOOD, ConnectionQuality.FAIR) -> SyncStrategy.BACKGROUND
-            else -> SyncStrategy.WIFI_ONLY
+            _networkType.value == NetworkType.WIFI -> SyncStrategy.AGGRESSIVE
+            _connectionQuality.value == ConnectionQuality.EXCELLENT -> SyncStrategy.AGGRESSIVE
+            _connectionQuality.value in listOf(
+                ConnectionQuality.GOOD,
+                ConnectionQuality.FAIR
+            ) -> SyncStrategy.CONSERVATIVE
+
+            else -> SyncStrategy.MINIMAL
         }
     }
 
@@ -285,9 +314,9 @@ enum class VideoQuality {
  * Sync strategies
  */
 enum class SyncStrategy {
-    IMMEDIATE,
-    BACKGROUND,
-    WIFI_ONLY,
+    AGGRESSIVE,
+    CONSERVATIVE,
+    MINIMAL,
     MANUAL
 }
 

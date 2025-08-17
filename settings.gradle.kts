@@ -1,3 +1,5 @@
+import org.gradle.api.initialization.resolve.RepositoriesMode
+
 pluginManagement {
     repositories {
         google {
@@ -26,6 +28,8 @@ include(":app")
 include(":core:common")
 include(":core:data")
 include(":core:database")
+// Removed database-simple module as it's been replaced by the full database module
+// include(":core:database-simple")
 include(":core:network")
 include(":core:analytics")
 include(":core:payment")

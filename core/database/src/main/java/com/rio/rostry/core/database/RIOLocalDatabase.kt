@@ -21,7 +21,8 @@ import java.util.*
         MessageEntity::class,
         ConversationEntity::class,
         TransferEntity::class,
-        // BreedingRecordEntity::class, // Removed - not implemented
+        FowlRecordEntity::class, // Add our new FowlRecordEntity
+        TransferLogEntity::class, // Add TransferLogEntity for verified transfer workflow
 
         // Coin payment system entities
         CoinTransactionEntity::class,
@@ -34,42 +35,35 @@ import java.util.*
         UserCoinBalanceEntity::class,
 
         // Sync and cache entities
-        // SyncQueueEntity::class, // Removed - not implemented
         OfflineActionEntity::class,
 
         // Supporting entities
-        // MediaEntity::class, // Removed - not implemented
         NotificationEntity::class,
         NotificationPreferenceEntity::class,
         TopicSubscriptionEntity::class,
-        NotificationAnalyticsEntity::class
+        NotificationAnalyticsEntity::class,
+        TimelineEntity::class
     ],
-    version = 3,
-    exportSchema = false
+    version = 3, // Update version since we're adding a new entity
+    exportSchema = true
 )
-@TypeConverters(
-    DateConverter::class,
-    SyncMetadataConverter::class,
-    TransactionStatusConverter::class,
-    TransactionTypeConverter::class,
-    SyncStatusConverter::class,
-    SyncPriorityConverter::class,
-    StringListConverter::class
-)
+@TypeConverters(Converters::class, FowlConverters::class) // Add our new converters
 abstract class RIOLocalDatabase : RoomDatabase() {
 
     // Core DAOs
     abstract fun userDao(): UserDao
-    abstract fun fowlDao(): FowlDao
-    abstract fun marketplaceDao(): MarketplaceDao
-    abstract fun messageDao(): MessageDao
-    abstract fun conversationDao(): ConversationDao
-    abstract fun transferDao(): TransferDao
-    // abstract fun breedingRecordDao(): BreedingRecordDao // Removed - not implemented
+    abstract fun fowlDao(): FowlDaoV2
+    abstract fun marketplaceDao(): com.rio.rostry.core.database.dao.MarketplaceDao
+    abstract fun messageDao(): MessageDaoV2
+    abstract fun conversationDao(): ConversationDaoV2
+    abstract fun transferDao(): TransferDaoV2
+    abstract fun transferLogDao(): TransferLogDao // Add TransferLogDao for verified transfer workflow
+    abstract fun outboxDao(): OutboxDaoV2
+    abstract fun fowlRecordDao(): FowlRecordDao // Add our new DAO
 
     // Sync and cache DAOs
     // abstract fun syncQueueDao(): SyncQueueDao // Removed - not implemented
-    abstract fun offlineActionDao(): OfflineActionDao
+    abstract fun cacheDao(): CacheDao
 
     // Coin payment system DAOs
     abstract fun coinTransactionDao(): CoinTransactionDao
@@ -85,265 +79,10 @@ abstract class RIOLocalDatabase : RoomDatabase() {
     abstract fun notificationPreferenceDao(): NotificationPreferenceDao
     abstract fun topicSubscriptionDao(): TopicSubscriptionDao
     abstract fun notificationAnalyticsDao(): NotificationAnalyticsDao
+    abstract fun timelineDao(): TimelineDao // Add TimelineDao
 
     companion object {
-        /**
-         * Migration from version 1 to 2 - Adding coin payment system tables
-         */
-        val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Create coin_transactions table
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS coin_transactions (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        user_id TEXT NOT NULL,
-                        transaction_type TEXT NOT NULL,
-                        amount INTEGER NOT NULL,
-                        purpose TEXT NOT NULL,
-                        status TEXT NOT NULL,
-                        order_id TEXT,
-                        payment_id TEXT,
-                        balance_before INTEGER NOT NULL DEFAULT 0,
-                        balance_after INTEGER NOT NULL DEFAULT 0,
-                        metadata TEXT,
-                        created_at INTEGER NOT NULL,
-                        updated_at INTEGER NOT NULL,
-                        synced_at INTEGER,
-                        is_synced INTEGER NOT NULL DEFAULT 0
-                    )
-                """.trimIndent())
-
-                // Create indexes for coin_transactions
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_coin_transactions_user_id_created_at ON coin_transactions(user_id, created_at)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_coin_transactions_transaction_type_status ON coin_transactions(transaction_type, status)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_coin_transactions_purpose_created_at ON coin_transactions(purpose, created_at)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_coin_transactions_is_synced_created_at ON coin_transactions(is_synced, created_at)")
-
-                // Create coin_orders table
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS coin_orders (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        order_id TEXT NOT NULL,
-                        user_id TEXT NOT NULL,
-                        package_id TEXT NOT NULL,
-                        coins INTEGER NOT NULL,
-                        bonus_coins INTEGER NOT NULL,
-                        total_coins INTEGER NOT NULL,
-                        amount REAL NOT NULL,
-                        currency TEXT NOT NULL DEFAULT 'INR',
-                        status TEXT NOT NULL,
-                        payment_method TEXT NOT NULL,
-                        payment_id TEXT,
-                        user_tier TEXT NOT NULL,
-                        created_at INTEGER NOT NULL,
-                        updated_at INTEGER NOT NULL,
-                        expires_at INTEGER,
-                        completed_at INTEGER
-                    )
-                """.trimIndent())
-
-                // Create indexes for coin_orders
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_coin_orders_user_id_status ON coin_orders(user_id, status)")
-                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_coin_orders_order_id ON coin_orders(order_id)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_coin_orders_created_at ON coin_orders(created_at)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_coin_orders_status_expires_at ON coin_orders(status, expires_at)")
-
-                // Create user_coin_balances table
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS user_coin_balances (
-                        user_id TEXT PRIMARY KEY NOT NULL,
-                        balance INTEGER NOT NULL,
-                        total_earned INTEGER NOT NULL DEFAULT 0,
-                        total_spent INTEGER NOT NULL DEFAULT 0,
-                        total_purchased INTEGER NOT NULL DEFAULT 0,
-                        last_transaction_id TEXT,
-                        last_updated INTEGER NOT NULL,
-                        synced_at INTEGER,
-                        is_synced INTEGER NOT NULL DEFAULT 0
-                    )
-                """.trimIndent())
-
-                // Create indexes for user_coin_balances
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_user_coin_balances_last_updated ON user_coin_balances(last_updated)")
-
-                // Create coin_packages table
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS coin_packages (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        package_id TEXT NOT NULL,
-                        name TEXT NOT NULL,
-                        description TEXT NOT NULL,
-                        coins INTEGER NOT NULL,
-                        bonus_coins INTEGER NOT NULL,
-                        total_coins INTEGER NOT NULL,
-                        price REAL NOT NULL,
-                        user_tier TEXT NOT NULL,
-                        active INTEGER NOT NULL DEFAULT 1,
-                        featured INTEGER NOT NULL DEFAULT 0,
-                        discount_percentage INTEGER NOT NULL DEFAULT 0,
-                        valid_from INTEGER,
-                        valid_until INTEGER,
-                        created_at INTEGER NOT NULL,
-                        updated_at INTEGER NOT NULL
-                    )
-                """.trimIndent())
-
-                // Create indexes for coin_packages
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_coin_packages_user_tier_active ON coin_packages(user_tier, active)")
-                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_coin_packages_package_id ON coin_packages(package_id)")
-
-                // Create refund_requests table
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS refund_requests (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        order_id TEXT NOT NULL,
-                        user_id TEXT NOT NULL,
-                        refund_type TEXT NOT NULL,
-                        requested_amount REAL NOT NULL,
-                        reason TEXT NOT NULL,
-                        evidence TEXT,
-                        status TEXT NOT NULL,
-                        priority TEXT NOT NULL,
-                        razorpay_refund_id TEXT,
-                        processed_amount REAL,
-                        failure_reason TEXT,
-                        auto_process_eligible INTEGER NOT NULL DEFAULT 0,
-                        created_at INTEGER NOT NULL,
-                        processed_at INTEGER
-                    )
-                """.trimIndent())
-
-                // Create indexes for refund_requests
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_refund_requests_user_id_status ON refund_requests(user_id, status)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_refund_requests_order_id ON refund_requests(order_id)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_refund_requests_created_at ON refund_requests(created_at)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_refund_requests_status_priority ON refund_requests(status, priority)")
-
-                // Create disputes table
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS disputes (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        transaction_id TEXT NOT NULL,
-                        disputant_id TEXT NOT NULL,
-                        respondent_id TEXT NOT NULL,
-                        dispute_type TEXT NOT NULL,
-                        reason TEXT NOT NULL,
-                        evidence TEXT,
-                        requested_resolution TEXT NOT NULL,
-                        status TEXT NOT NULL,
-                        priority TEXT NOT NULL,
-                        escalation_level INTEGER NOT NULL DEFAULT 0,
-                        mediator_id TEXT,
-                        resolution_deadline INTEGER NOT NULL,
-                        escrow_amount INTEGER NOT NULL,
-                        escrow_status TEXT NOT NULL,
-                        resolution TEXT,
-                        reasoning TEXT,
-                        resolver_id TEXT,
-                        compensation_amount REAL,
-                        created_at INTEGER NOT NULL,
-                        escalated_at INTEGER,
-                        resolved_at INTEGER
-                    )
-                """.trimIndent())
-
-                // Create indexes for disputes
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_disputes_transaction_id ON disputes(transaction_id)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_disputes_disputant_id_status ON disputes(disputant_id, status)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_disputes_respondent_id_status ON disputes(respondent_id, status)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_disputes_status_created_at ON disputes(status, created_at)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_disputes_mediator_id_status ON disputes(mediator_id, status)")
-            }
-        }
-
-        /**
-         * Migration from version 2 to 3 - Adding notification system tables
-         */
-        val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Create notifications table
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS notifications (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        title TEXT NOT NULL,
-                        body TEXT NOT NULL,
-                        imageUrl TEXT,
-                        category TEXT NOT NULL,
-                        priority TEXT NOT NULL,
-                        deepLink TEXT,
-                        data TEXT NOT NULL,
-                        isRead INTEGER NOT NULL DEFAULT 0,
-                        createdAt INTEGER NOT NULL,
-                        receivedAt INTEGER NOT NULL,
-                        readAt INTEGER,
-                        syncedAt INTEGER,
-                        isSynced INTEGER NOT NULL DEFAULT 0
-                    )
-                """.trimIndent())
-
-                // Create indexes for notifications
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_notifications_category_created_at ON notifications(category, createdAt)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_notifications_isRead_created_at ON notifications(isRead, createdAt)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_notifications_priority_created_at ON notifications(priority, createdAt)")
-
-                // Create notification_preferences table
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS notification_preferences (
-                        userId TEXT PRIMARY KEY NOT NULL,
-                        marketplaceNotifications INTEGER NOT NULL DEFAULT 1,
-                        transferNotifications INTEGER NOT NULL DEFAULT 1,
-                        communicationNotifications INTEGER NOT NULL DEFAULT 1,
-                        breedingNotifications INTEGER NOT NULL DEFAULT 1,
-                        paymentNotifications INTEGER NOT NULL DEFAULT 1,
-                        systemNotifications INTEGER NOT NULL DEFAULT 1,
-                        quietHoursEnabled INTEGER NOT NULL DEFAULT 0,
-                        quietHoursStart TEXT NOT NULL DEFAULT '22:00',
-                        quietHoursEnd TEXT NOT NULL DEFAULT '08:00',
-                        soundEnabled INTEGER NOT NULL DEFAULT 1,
-                        vibrationEnabled INTEGER NOT NULL DEFAULT 1,
-                        createdAt INTEGER NOT NULL,
-                        updatedAt INTEGER NOT NULL
-                    )
-                """.trimIndent())
-
-                // Create topic_subscriptions table
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS topic_subscriptions (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        userId TEXT NOT NULL,
-                        topicName TEXT NOT NULL,
-                        isSubscribed INTEGER NOT NULL DEFAULT 1,
-                        subscribedAt INTEGER NOT NULL,
-                        unsubscribedAt INTEGER,
-                        syncedAt INTEGER,
-                        isSynced INTEGER NOT NULL DEFAULT 0
-                    )
-                """.trimIndent())
-
-                // Create indexes for topic_subscriptions
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_topic_subscriptions_userId_topicName ON topic_subscriptions(userId, topicName)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_topic_subscriptions_isSubscribed ON topic_subscriptions(isSubscribed)")
-
-                // Create notification_analytics table
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS notification_analytics (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        notificationId TEXT NOT NULL,
-                        userId TEXT NOT NULL,
-                        eventType TEXT NOT NULL,
-                        eventData TEXT NOT NULL,
-                        timestamp INTEGER NOT NULL,
-                        syncedAt INTEGER,
-                        isSynced INTEGER NOT NULL DEFAULT 0
-                    )
-                """.trimIndent())
-
-                // Create indexes for notification_analytics
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_notification_analytics_notificationId ON notification_analytics(notificationId)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_notification_analytics_userId_eventType ON notification_analytics(userId, eventType)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_notification_analytics_timestamp ON notification_analytics(timestamp)")
-            }
-        }
+        const val DATABASE_NAME = "rio_database"
     }
 }
 
@@ -358,8 +97,12 @@ data class CacheEntity(
     val createdAt: Date,
     val expiresAt: Date,
     val compressed: Boolean = false,
-    val size: Long = 0
-)
+    val size: Long = 0,
+    @Embedded override val syncMetadata: com.rio.rostry.core.database.entities.SyncMetadata = com.rio.rostry.core.database.entities.SyncMetadata()
+) : com.rio.rostry.core.database.entities.SyncableEntity {
+    override val id: String
+        get() = key
+}
 
 /**
  * Offline action entity for queuing operations
@@ -433,29 +176,7 @@ data class MessageCacheEntity(
  * Generic cache DAO
  */
 @Dao
-interface CacheDao {
-    
-    @Query("SELECT * FROM cache WHERE key = :key")
-    suspend fun get(key: String): CacheEntity?
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(cacheEntity: CacheEntity)
-    
-    @Query("DELETE FROM cache WHERE key = :key")
-    suspend fun delete(key: String)
-    
-    @Query("DELETE FROM cache WHERE expiresAt < :currentTime")
-    suspend fun deleteExpired(currentTime: Long = System.currentTimeMillis())
-    
-    @Query("SELECT SUM(size) FROM cache")
-    suspend fun getTotalSize(): Long
-    
-    @Query("DELETE FROM cache WHERE priority = 'LOW' LIMIT :limit")
-    suspend fun deleteLowPriorityItems(limit: Int)
-    
-    @Query("SELECT COUNT(*) FROM cache")
-    suspend fun getCount(): Int
-}
+interface CacheDao : BaseSyncableDao<CacheEntity>
 
 /**
  * Offline action DAO
@@ -605,6 +326,14 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        // Migration logic from version 2 to 3 would go here
+        // For example, creating a new table for TransferLogEntity
+        database.execSQL("CREATE TABLE IF NOT EXISTS TransferLogEntity (id TEXT PRIMARY KEY, transferId TEXT, status TEXT, timestamp INTEGER)")
+    }
+}
+
 /**
  * Database builder with optimizations for rural networks
  */
@@ -616,7 +345,10 @@ object DatabaseBuilder {
             RIOLocalDatabase::class.java,
             "rio_local_database"
         )
-        .addMigrations(MIGRATION_1_2)
+        .addMigrations(
+            MIGRATION_1_2,
+            MIGRATION_2_3 // Add our new migration
+        )
         .fallbackToDestructiveMigration() // For development only
         .enableMultiInstanceInvalidation()
         .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING) // Better performance

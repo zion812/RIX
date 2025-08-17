@@ -9,7 +9,7 @@ import java.util.*
  * Data Access Object for fowl-related operations
  */
 @Dao
-interface FowlDao {
+interface FowlDaoV2 {
     
     @Query("SELECT * FROM fowls WHERE id = :fowlId")
     suspend fun getFowlById(fowlId: String): FowlEntity?

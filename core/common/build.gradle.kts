@@ -32,12 +32,17 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    
+    buildFeatures {
+        viewBinding = true
+    }
 }
 
 dependencies {
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.fragment.ktx)
 
     // Coroutines - Essential for common utilities
     implementation(libs.kotlinx.coroutines.android)
@@ -45,6 +50,20 @@ dependencies {
     // Dependency Injection - Hilt Core
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
+
+    // Material Components for Snackbar
+    implementation(libs.material)
+
+    // Navigation Components
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
+
+    // Firebase BOM and Remote Config for FeatureFlagManager
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.config.ktx)
+    
+    // Coroutines support for Play Services/Firebase
+    implementation(libs.kotlinx.coroutines.play.services)
 
     // Date/Time utilities
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")

@@ -1,7 +1,7 @@
 rules_version = '2';
 
-// Firestore Security Rules for RIO Coin-Based Payment System
-// Comprehensive security for payment transactions and user data
+// Firestore Security Rules for ROSTRY Poultry Platform
+// Comprehensive security for poultry records, transfers, and marketplace
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -93,6 +93,11 @@ service cloud.firestore {
       return request.auth.token.verificationStatus.emailVerified == true;
     }
 
+    // Check if a transfer log is in a final state (cannot be modified)
+    function isTransferLogFinalized() {
+      return resource.data.transferStatus in ['VERIFIED', 'REJECTED'];
+    }
+
     // Marketplace listing rules
     match /databases/{database}/documents/marketplace/{listingId} {
       allow read: if isAuthenticated();
@@ -115,118 +120,29 @@ service cloud.firestore {
       allow write: if isAuthenticated() && isOwner(userId);
     }
 
-    // Coin transactions - strict access control
-    match /coin_transactions/{transactionId} {
+    // Transfer logs - immutable once verified or rejected
+    match /transfer_logs/{logId} {
       allow read: if isAuthenticated() && 
-                  (isOwner(resource.data.userId) || isAdminOrModerator());
-      allow create: if false; // Only Cloud Functions can create transactions
-      allow update: if false; // Transactions are immutable
-      allow delete: if false; // Transactions cannot be deleted
-    }
-
-    // Coin orders - user can read their own orders
-    match /coin_orders/{orderId} {
-      allow read: if isAuthenticated() && 
-                  (isOwner(resource.data.userId) || isAdminOrModerator());
-      allow create: if false; // Only Cloud Functions can create orders
-      allow update: if false; // Orders are immutable after creation
-      allow delete: if false; // Orders cannot be deleted
-    }
-
-    // User coin balances - read-only for users
-    match /user_coin_balances/{userId} {
-      allow read: if isAuthenticated() && (isOwner(userId) || isAdminOrModerator());
-      allow write: if false; // Only Cloud Functions can modify balances
-    }
-
-    // Coin packages - public read, admin write
-    match /coin_packages/{packageId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isAdmin();
-    }
-
-    // Refund requests - users can read/create their own
-    match /refund_requests/{refundId} {
-      allow read: if isAuthenticated() && 
-                  (isOwner(resource.data.userId) || isAdminOrModerator());
-      allow create: if isAuthenticated() && 
-                    isOwner(request.resource.data.userId) &&
-                    request.resource.data.keys().hasAll(['userId', 'orderId', 'reason']);
-      allow update: if isAuthenticated() && isAdminOrModerator();
-      allow delete: if false; // Refund requests cannot be deleted
-    }
-
-    // Disputes - participants and moderators can access
-    match /disputes/{disputeId} {
-      allow read: if isAuthenticated() && 
-                  (isOwner(resource.data.disputantId) || 
-                   isOwner(resource.data.respondentId) ||
+                  (isOwner(resource.data.fromUserId) || 
+                   isOwner(resource.data.toUserId) ||
                    isAdminOrModerator());
+      
+      // Only allow creation of new transfer logs
       allow create: if isAuthenticated() && 
-                    isOwner(request.resource.data.disputantId) &&
-                    request.resource.data.keys().hasAll(['disputantId', 'respondentId', 'transactionId', 'reason']);
+                    isOwner(request.resource.data.fromUserId) &&
+                    request.resource.data.fromUserId != request.resource.data.toUserId;
+      
+      // Only allow updates if not in final state
       allow update: if isAuthenticated() && 
-                    (isAdminOrModerator() || 
-                     (isOwner(resource.data.respondentId) && 
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['response', 'updatedAt'])));
-      allow delete: if false; // Disputes cannot be deleted
+                    (isOwner(resource.data.fromUserId) || isOwner(resource.data.toUserId)) &&
+                    !isTransferLogFinalized() &&
+                    validateTransferLogUpdate();
+      
+      // No deletions allowed
+      allow delete: if false;
     }
 
-    // Fraud checks - admin only
-    match /fraud_checks/{checkId} {
-      allow read: if isAuthenticated() && isAdminOrModerator();
-      allow write: if false; // Only Cloud Functions can create fraud checks
-    }
-
-    // Suspicious activities - admin only
-    match /suspicious_activities/{activityId} {
-      allow read: if isAuthenticated() && isAdminOrModerator();
-      allow write: if false; // Only Cloud Functions can create suspicious activity records
-    }
-
-    // Demo orders - for testing only
-    match /demo_orders/{orderId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow write: if false; // Only Cloud Functions can manage demo orders
-    }
-
-    // Demo webhooks - for testing only
-    match /demo_webhooks/{webhookId} {
-      allow read: if isAuthenticated() && isAdminOrModerator();
-      allow write: if false; // Only Cloud Functions can create webhook records
-    }
-
-    // Demo transaction logs - for testing only
-    match /demo_transaction_logs/{logId} {
-      allow read: if isAuthenticated() && isAdminOrModerator();
-      allow write: if false; // Only Cloud Functions can create logs
-    }
-
-    // Demo analytics - for testing only
-    match /demo_analytics/{analyticsId} {
-      allow read: if isAuthenticated() && isAdminOrModerator();
-      allow write: if false; // Only Cloud Functions can create analytics
-    }
-
-    // Payment analytics - admin only
-    match /payment_analytics/{analyticsId} {
-      allow read: if isAuthenticated() && isAdminOrModerator();
-      allow write: if false; // Only Cloud Functions can create analytics
-    }
-
-    // System configuration - admin only
-    match /system_config/{configId} {
-      allow read: if isAuthenticated() && isAdminOrModerator();
-      allow write: if isAuthenticated() && isAdmin();
-    }
-
-    // Audit logs - admin only
-    match /audit_logs/{logId} {
-      allow read: if isAuthenticated() && isAdminOrModerator();
-      allow write: if false; // Only Cloud Functions can create audit logs
-    }
-
-    // ✅ Fowl listings - tier-based restrictions
+    // Fowl records
     match /fowls/{fowlId} {
       allow read: if isAuthenticated();
 
@@ -246,7 +162,23 @@ service cloud.firestore {
                    isFarmerOrHigher();
     }
 
-    // ✅ Marketplace listings - tier-based feature restrictions
+    // Fowl records/timeline events
+    match /fowl_records/{recordId} {
+      allow read: if isAuthenticated() &&
+                  (isOwner(getFowlOwner(resource.data.fowlId)) || isAdminOrModerator());
+      
+      allow create: if isAuthenticated() &&
+                    isFowlOwner(resource.data.fowlId);
+      
+      allow update: if isAuthenticated() &&
+                    isFowlOwner(resource.data.fowlId) &&
+                    validateFowlRecordUpdate();
+      
+      allow delete: if isAuthenticated() &&
+                    isFowlOwner(resource.data.fowlId);
+    }
+
+    // Marketplace listings - tier-based feature restrictions
     match /marketplace/{listingId} {
       allow read: if isAuthenticated();
 
@@ -324,6 +256,28 @@ service cloud.firestore {
       let data = request.resource.data;
       // Cannot change seller or fowl
       return !data.diff(resource.data).affectedKeys().hasAny(['sellerId', 'fowlId']);
+    }
+
+    function validateTransferLogUpdate() {
+      let data = request.resource.data;
+      // Cannot change core identifiers
+      let immutableFields = ['fromUserId', 'toUserId', 'fowlId', 'initiatedAt'];
+      return !data.diff(resource.data).affectedKeys().hasAny(immutableFields);
+    }
+
+    function isFowlOwner(fowlId) {
+      // Get the fowl document and check if current user is owner
+      return get(/databases/$(database)/documents/fowls/$(fowlId)).data.ownerId == getUserId();
+    }
+
+    function getFowlOwner(fowlId) {
+      return get(/databases/$(database)/documents/fowls/$(fowlId)).data.ownerId;
+    }
+
+    function validateFowlRecordUpdate() {
+      let data = request.resource.data;
+      // Cannot change fowl association
+      return !data.diff(resource.data).affectedKeys().hasAny(['fowlId']);
     }
 
     // Default deny all other paths

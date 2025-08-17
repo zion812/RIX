@@ -1,7 +1,7 @@
 1<?xml version="1.0" encoding="utf-8"?>
 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-3    package="com.rio.rostry.features.user" >
-4
+3    package="com.rio.rostry.features.user" > <!-- No activities or services declared here as this is a feature module -->
+4    <!-- All components will be declared in the main app module -->
 5    <uses-sdk android:minSdkVersion="24" />
 6
 7</manifest>

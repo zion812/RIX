@@ -1,6 +1,9 @@
 C:\Users\rowdy\AndroidStudioProjects\RIX\features\familytree\src\main\java\com\rio\rostry\features\familytree\domain\model\FowlNode.kt
 C:\Users\rowdy\AndroidStudioProjects\RIX\features\familytree\src\main\java\com\rio\rostry\features\familytree\ui\components\FamilyTreeGraph.kt
 C:\Users\rowdy\AndroidStudioProjects\RIX\features\familytree\src\main\java\com\rio\rostry\features\familytree\ui\viewmodel\FamilyTreeViewModel.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\familytree\src\main\java\com\rio\rostry\familytree\ui\LineageVisualization.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\familytree\src\main\java\com\rio\rostry\familytree\ui\viewmodels\LineageViewModel.kt
 C:\Users\rowdy\AndroidStudioProjects\RIX\features\familytree\src\main\java\com\rio\rostry\familytree\ui\components\MemoryOptimizedFamilyTree.kt
+C:\Users\rowdy\AndroidStudioProjects\RIX\features\familytree\src\main\java\com\rio\rostry\familytree\ui\LineageScreen.kt
 C:\Users\rowdy\AndroidStudioProjects\RIX\features\familytree\src\main\java\com\rio\rostry\features\familytree\ui\screens\FamilyTreeScreen.kt
 C:\Users\rowdy\AndroidStudioProjects\RIX\features\familytree\src\main\java\com\rio\rostry\familytree\ui\components\OptimizedFamilyTreeView.kt

@@ -1,22 +1,16 @@
 package com.rio.rostry.auth
 
-/**
- * Represents the user tier in the RIO platform
- */
-enum class UserTier(val displayName: String) {
-    GENERAL("General User"),
-    FARMER("Farmer"),
-    ENTHUSIAST("High-Level Enthusiast");
+import com.rio.rostry.core.common.model.UserTier
 
-    companion object {
-        fun fromString(value: String?): UserTier {
-            return when (value?.lowercase()) {
-                "general" -> GENERAL
-                "farmer" -> FARMER
-                "enthusiast" -> ENTHUSIAST
-                else -> GENERAL
-            }
-        }
+/**
+ * Extension function for UserTier enum
+ */
+fun UserTier.Companion.fromString(value: String?): UserTier {
+    return when (value?.lowercase()) {
+        "general" -> UserTier.GENERAL
+        "farmer" -> UserTier.FARMER
+        "enthusiast" -> UserTier.ENTHUSIAST
+        else -> UserTier.GENERAL
     }
 }
 

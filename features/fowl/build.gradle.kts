@@ -43,7 +43,7 @@ android {
 dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:data")) // Re-enabled for Phase 4
-    implementation(project(":core:database-simple")) // Add database access
+    // implementation(project(":core:database-simple")) // Deprecated - migrated to core:database
     
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.extended)
     
     // Navigation
     implementation(libs.androidx.navigation.compose)

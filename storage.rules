@@ -1,7 +1,7 @@
 rules_version = '2';
 
-// Firebase Storage Security Rules for RIO Payment System
-// Optimized for payment receipts, documents, and user verification
+// Firebase Storage Security Rules for ROSTRY Poultry Platform
+// Optimized for fowl records, proof uploads, and media management
 
 service firebase.storage {
   match /b/{bucket}/o {
@@ -46,11 +46,10 @@ service firebase.storage {
       return true; // Placeholder
     }
     
-    // Payment receipts and documents
-    match /users/{userId}/payments/{paymentId}/{allPaths=**} {
-      // Read access: Owner and admins only
-      allow read: if isAuthenticated() && 
-                  (isOwner(userId) || isAdminOrModerator());
+    // Fowl proof media - scoped to owners only
+    match /users/{userId}/fowls/{fowlId}/proofs/{allPaths=**} {
+      // Read access: Owner only (no public reads per requirements)
+      allow read: if isAuthenticated() && isOwner(userId);
       
       // Write access: Owner only with proper file type and size
       allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
@@ -58,40 +57,14 @@ service firebase.storage {
                     (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024))); // 10MB for documents
     }
     
-    // Verification documents for tier upgrades
-    match /users/{userId}/verification/{allPaths=**} {
-      // Read access: Owner and admins only
-      allow read: if isAuthenticated() && 
-                  (isOwner(userId) || isAdminOrModerator());
+    // Fowl thumbnails - scoped to owners only
+    match /users/{userId}/fowls/{fowlId}/thumbnails/{allPaths=**} {
+      // Read access: Owner only (no public reads per requirements)
+      allow read: if isAuthenticated() && isOwner(userId);
       
-      // Write access: Owner only with proper file type and size
+      // Write access: Owner only with image type and size limits
       allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
-                   ((isValidImageType() && isWithinSizeLimit(5 * 1024 * 1024)) ||
-                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024)));
-    }
-    
-    // Dispute evidence files
-    match /disputes/{disputeId}/evidence/{allPaths=**} {
-      // Read access: Dispute participants and admins
-      allow read: if isAuthenticated() && 
-                  (isDisputeParticipant(disputeId) || isAdminOrModerator());
-      
-      // Write access: Dispute participants only
-      allow write: if isAuthenticated() && isDisputeParticipant(disputeId) && isWithinRateLimit() &&
-                   ((isValidImageType() && isWithinSizeLimit(5 * 1024 * 1024)) ||
-                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024)));
-    }
-    
-    // Refund supporting documents
-    match /refunds/{refundId}/documents/{allPaths=**} {
-      // Read access: Refund requester and admins
-      allow read: if isAuthenticated() && 
-                  (isRefundRequester(refundId) || isAdminOrModerator());
-      
-      // Write access: Refund requester only
-      allow write: if isAuthenticated() && isRefundRequester(refundId) && isWithinRateLimit() &&
-                   ((isValidImageType() && isWithinSizeLimit(5 * 1024 * 1024)) ||
-                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024)));
+                   isValidImageType() && isWithinSizeLimit(1 * 1024 * 1024); // 1MB for thumbnails
     }
     
     // User profile images
@@ -104,14 +77,16 @@ service firebase.storage {
                    isValidImageType() && isWithinSizeLimit(2 * 1024 * 1024); // 2MB for profile images
     }
     
-    // Fowl images (existing marketplace functionality)
-    match /users/{userId}/fowls/{fowlId}/{allPaths=**} {
-      // Read access: All authenticated users (for marketplace)
-      allow read: if isAuthenticated();
+    // Transfer verification documents
+    match /users/{userId}/transfers/{transferId}/verification/{allPaths=**} {
+      // Read access: Transfer participants and admins only
+      allow read: if isAuthenticated() && 
+                  (isOwner(userId) || isTransferParticipant(transferId) || isAdminOrModerator());
       
-      // Write access: Owner only with proper file type and size
+      // Write access: Transfer initiator only
       allow write: if isAuthenticated() && isOwner(userId) && isWithinRateLimit() &&
-                   isValidImageType() && isWithinSizeLimit(5 * 1024 * 1024); // 5MB for fowl images
+                   ((isValidImageType() && isWithinSizeLimit(5 * 1024 * 1024)) ||
+                    (isValidDocumentType() && isWithinSizeLimit(10 * 1024 * 1024)));
     }
     
     // System files and backups - admin only
@@ -127,20 +102,13 @@ service firebase.storage {
                          isWithinSizeLimit(100 * 1024 * 1024); // 100MB temp limit
     }
     
-    // Demo payment receipts and test files
-    match /demo/{allPaths=**} {
-      // Read access: All authenticated users for demo purposes
-      allow read: if isAuthenticated();
+    // Export files - restricted per requirements
+    match /users/{userId}/exports/{allPaths=**} {
+      // Read access: Owner only
+      allow read: if isAuthenticated() && isOwner(userId);
       
-      // Write access: All authenticated users with size limits
-      allow write: if isAuthenticated() && isWithinRateLimit() &&
-                   isWithinSizeLimit(10 * 1024 * 1024); // 10MB for demo files
-    }
-    
-    // Analytics and reports - admin only
-    match /reports/{allPaths=**} {
-      allow read: if isAuthenticated() && isAdminOrModerator();
-      allow write: if false; // Only Cloud Functions can generate reports
+      // No write access - exports are generated by system
+      allow write: if false;
     }
     
     // Default deny all other paths
@@ -153,13 +121,8 @@ service firebase.storage {
 // Helper functions that would be implemented with Firestore lookups
 // These are placeholders for the actual implementation
 
-function isDisputeParticipant(disputeId) {
-  // Would check Firestore disputes collection to verify user is participant
-  return true; // Placeholder
-}
-
-function isRefundRequester(refundId) {
-  // Would check Firestore refund_requests collection to verify user is requester
+function isTransferParticipant(transferId) {
+  // Would check Firestore transfer_logs collection to verify user is participant
   return true; // Placeholder
 }
 

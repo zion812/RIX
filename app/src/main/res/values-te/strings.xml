@@ -6,4 +6,5 @@
     <string name="data_retention_agree">RBI/GDPR డేటా నిల్వ విధానానికి నేను అంగీకరిస్తున్నాను</string>
     <string name="action_accept">అంగీకరించు</string>
     <string name="action_decline">తిరస్కరించు</string>
+    <string name="sign_up_link">ఖాతా లేదు? సైన్ అప్ చేసుకోండి</string>
 </resources>

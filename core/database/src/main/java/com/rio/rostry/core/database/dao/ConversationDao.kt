@@ -5,41 +5,48 @@ import com.rio.rostry.core.database.entities.ConversationEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * DAO for conversation operations
+ * Data Access Object for conversation operations
  */
 @Dao
-interface ConversationDao {
+interface ConversationDaoV2 {
     
     @Query("SELECT * FROM conversations WHERE id = :conversationId")
-    suspend fun getById(conversationId: String): ConversationEntity?
+    suspend fun getConversationById(conversationId: String): ConversationEntity?
     
-    @Query("SELECT * FROM conversations WHERE participant1_id = :userId OR participant2_id = :userId ORDER BY last_message_at DESC")
-    suspend fun getConversationsByUser(userId: String): List<ConversationEntity>
+    @Query("SELECT * FROM conversations WHERE id = :conversationId")
+    fun observeConversation(conversationId: String): Flow<ConversationEntity?>
     
-    @Query("SELECT * FROM conversations WHERE participant1_id = :userId OR participant2_id = :userId ORDER BY last_message_at DESC")
-    fun observeConversationsByUser(userId: String): Flow<List<ConversationEntity>>
+    @Query("SELECT * FROM conversations WHERE participantIds LIKE '%' || :userId || '%' ORDER BY lastMessageTimestamp DESC")
+    fun getConversationsForUser(userId: String): Flow<List<ConversationEntity>>
     
-    @Query("SELECT * FROM conversations WHERE (participant1_id = :user1 AND participant2_id = :user2) OR (participant1_id = :user2 AND participant2_id = :user1)")
-    suspend fun getConversationBetweenUsers(user1: String, user2: String): ConversationEntity?
+    @Query("SELECT * FROM conversations WHERE participantIds LIKE '%' || :userId || '%' ORDER BY lastMessageTimestamp DESC")
+    suspend fun getConversationsForUserSync(userId: String): List<ConversationEntity>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(conversation: ConversationEntity)
+    suspend fun insertConversation(conversation: ConversationEntity): Long
+    
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertConversations(conversations: List<ConversationEntity>): List<Long>
     
     @Update
-    suspend fun update(conversation: ConversationEntity)
+    suspend fun updateConversation(conversation: ConversationEntity): Int
+    
+    @Query("UPDATE conversations SET lastMessage = :lastMessage, lastMessageTimestamp = :timestamp, unreadCount = :unreadCount WHERE id = :conversationId")
+    suspend fun updateLastMessage(conversationId: String, lastMessage: String, timestamp: java.util.Date, unreadCount: Int): Int
     
     @Delete
-    suspend fun delete(conversation: ConversationEntity)
+    suspend fun deleteConversation(conversation: ConversationEntity): Int
     
-    @Query("UPDATE conversations SET last_message_at = :timestamp, last_message_preview = :preview WHERE id = :conversationId")
-    suspend fun updateLastMessage(conversationId: String, timestamp: Long, preview: String)
+    @Query("DELETE FROM conversations WHERE id = :conversationId")
+    suspend fun deleteConversationById(conversationId: String): Int
     
-    @Query("UPDATE conversations SET unread_count = :count WHERE id = :conversationId")
-    suspend fun updateUnreadCount(conversationId: String, count: Int)
+    // Sync operations
+    @Query("SELECT * FROM conversations WHERE isSynced = 0")
+    suspend fun getUnsyncedConversations(): List<ConversationEntity>
     
-    @Query("SELECT COUNT(*) FROM conversations WHERE (participant1_id = :userId OR participant2_id = :userId) AND unread_count > 0")
-    suspend fun getTotalUnreadCount(userId: String): Int
+    @Query("UPDATE conversations SET isSynced = 1 WHERE id = :conversationId")
+    suspend fun markConversationAsSynced(conversationId: String)
     
-    @Query("SELECT COUNT(*) FROM conversations WHERE (participant1_id = :userId OR participant2_id = :userId) AND unread_count > 0")
-    fun observeTotalUnreadCount(userId: String): Flow<Int>
+    @Query("SELECT COUNT(*) FROM conversations WHERE participantIds LIKE '%' || :userId || '%' AND unreadCount > 0")
+    suspend fun getUnreadConversationsCount(userId: String): Int
 }
